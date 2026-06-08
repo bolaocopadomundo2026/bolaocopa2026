@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bolão Copa do Mundo 2026</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;900&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{--green:#00C878;--green-dark:#00A060;--green-dim:#003D25;--gold:#FFD700;--bg:#0A0F0D;--bg2:#111810;--bg3:#182018;--surface:#1C2620;--border:rgba(0,200,120,0.15);--text:#E8F5EE;--muted:#6B8C78;--danger:#FF5A5A;--amber:#FFB347}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:'Barlow',sans-serif;min-height:100vh}
+header{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 1rem;position:sticky;top:0;z-index:100;display:flex;align-items:center;gap:.75rem;height:56px;flex-wrap:wrap}
+.logo{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:20px;color:var(--green);white-space:nowrap}
+.logo span{color:var(--gold)}
+.user-info{margin-left:auto;font-size:12px;color:var(--muted);display:flex;align-items:center;gap:8px}
+.user-name{color:var(--green);font-weight:500}
+nav{display:flex;gap:2px;flex-wrap:wrap}
+.nav-btn{background:none;border:none;color:var(--muted);font-family:'Barlow',sans-serif;font-size:12px;font-weight:500;padding:5px 10px;border-radius:6px;cursor:pointer;transition:all .15s;white-space:nowrap}
+.nav-btn:hover,.nav-btn.active{background:var(--surface);color:var(--green)}
+main{max-width:960px;margin:0 auto;padding:1.25rem 1rem 4rem}
+.page{display:none}.page.active{display:block}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1.25rem;margin-bottom:1rem}
+.section-head{font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:700;margin-bottom:1rem}
+.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:8px;margin-bottom:1.25rem}
+.metric{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:.75rem;text-align:center}
+.metric-val{font-family:'Barlow Condensed',sans-serif;font-size:26px;font-weight:700;color:var(--green)}
+.metric-label{font-size:11px;color:var(--muted);margin-top:3px;text-transform:uppercase;letter-spacing:.5px}
+.rank-item{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)}
+.rank-item:last-child{border-bottom:none}
+.rank-pos{font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:900;width:32px;text-align:center}
+.rank-pos.p1{color:var(--gold)}.rank-pos.p2{color:#C0C0C0}.rank-pos.p3{color:#CD7F32}
+.rank-avatar{width:34px;height:34px;border-radius:50%;background:var(--green-dim);border:1.5px solid var(--green);display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:11px;color:var(--green);flex-shrink:0}
+.rank-name{flex:1;font-size:13px;font-weight:500}
+.rank-bar-wrap{flex:2;height:5px;background:var(--bg3);border-radius:3px;overflow:hidden}
+.rank-bar{height:5px;background:linear-gradient(90deg,var(--green-dark),var(--green));border-radius:3px;transition:width .5s}
+.rank-pts{font-family:'Barlow Condensed',sans-serif;font-size:17px;font-weight:700;color:var(--green);min-width:58px;text-align:right}
+select,input[type=text],input[type=number],input[type=password],input[type=datetime-local]{background:var(--bg3);border:1px solid var(--border);color:var(--text);font-family:'Barlow',sans-serif;font-size:13px;padding:7px 10px;border-radius:8px;width:100%}
+select{cursor:pointer}
+select:focus,input:focus{outline:none;border-color:var(--green)}
+.btn{padding:7px 16px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-family:'Barlow',sans-serif;font-size:13px;font-weight:500;cursor:pointer;transition:all .15s;white-space:nowrap}
+.btn:hover{border-color:var(--green);color:var(--green)}
+.btn.primary{background:var(--green);border-color:var(--green);color:#000;font-weight:600}
+.btn.primary:hover{background:var(--green-dark)}
+.btn.danger{background:var(--danger);border-color:var(--danger);color:#fff}
+.btn.sm{padding:4px 10px;font-size:12px}
+.row{display:flex;gap:8px;align-items:flex-start;flex-wrap:wrap;margin-bottom:.875rem}
+.row .grow{flex:1;min-width:130px}
+.form-label{font-size:12px;color:var(--muted);margin-bottom:3px;display:block}
+.game-card{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:.875rem;margin-bottom:.625rem}
+.game-card.mine{border-color:rgba(0,200,120,0.3)}
+.game-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:.625rem;flex-wrap:wrap;gap:5px}
+.game-num{font-size:11px;color:var(--muted)}
+.game-prazo{font-size:11px;padding:2px 7px;border-radius:10px}
+.prazo-ok{background:#003D25;color:var(--green)}
+.prazo-vencido{background:#3D0000;color:var(--danger)}
+.game-teams{display:grid;grid-template-columns:1fr auto auto auto 1fr;align-items:center;gap:6px;margin-bottom:.625rem}
+.team-name{font-size:13px;font-weight:500}
+.team-name.right{text-align:right}
+.score-box{width:46px;text-align:center;padding:5px 3px}
+.sep{font-size:13px;color:var(--muted);text-align:center}
+.bonus-row{background:rgba(255,179,71,0.08);border:1px solid rgba(255,179,71,0.2);border-radius:8px;padding:.5rem .75rem;margin-bottom:.5rem}
+.bonus-label{font-size:12px;color:var(--amber);margin-bottom:5px;font-weight:500}
+.pts-badge{font-size:11px;padding:2px 6px;border-radius:10px;background:var(--green-dim);color:var(--green);font-weight:600}
+.dobro-badge{font-size:11px;padding:2px 6px;border-radius:10px;background:#3D2800;color:var(--amber);font-weight:600}
+.info-bar{background:var(--green-dim);border:1px solid rgba(0,200,120,0.2);border-radius:8px;padding:9px 12px;font-size:12px;color:var(--green);margin-bottom:.875rem}
+.warn-bar{background:#3D2800;border:1px solid rgba(255,179,71,0.2);border-radius:8px;padding:9px 12px;font-size:12px;color:var(--amber);margin-bottom:.875rem}
+.login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:1rem}
+.login-box{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:2rem;width:100%;max-width:380px}
+.login-title{font-family:'Barlow Condensed',sans-serif;font-size:28px;font-weight:900;color:var(--green);margin-bottom:.2rem}
+.login-sub{font-size:13px;color:var(--muted);margin-bottom:1.25rem}
+.form-group{margin-bottom:.875rem}
+.error-msg{color:var(--danger);font-size:12px;margin-top:6px}
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;padding:7px 9px;color:var(--muted);border-bottom:1px solid var(--border);font-weight:500}
+td{padding:7px 9px;border-bottom:1px solid var(--border);vertical-align:middle}
+tr:last-child td{border-bottom:none}
+.fase-badge{font-size:11px;padding:2px 7px;border-radius:10px;background:var(--surface);color:var(--muted)}
+.toast{position:fixed;bottom:2rem;left:50%;transform:translateX(-50%) translateY(80px);background:var(--green);color:#000;font-weight:600;font-size:13px;padding:9px 20px;border-radius:8px;transition:transform .3s;z-index:999;pointer-events:none}
+.toast.show{transform:translateX(-50%) translateY(0)}
+.spinner{display:inline-block;width:15px;height:15px;border:2px solid var(--border);border-top-color:var(--green);border-radius:50%;animation:spin .6s linear infinite;vertical-align:middle}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-overlay{position:fixed;inset:0;background:rgba(10,15,13,.85);display:flex;align-items:center;justify-content:center;z-index:200;font-size:14px;color:var(--green);gap:10px}
+.tab-row{display:flex;gap:3px;margin-bottom:1rem;border-bottom:1px solid var(--border);flex-wrap:wrap}
+.tab-btn{background:none;border:none;color:var(--muted);font-family:'Barlow',sans-serif;font-size:12px;padding:7px 12px;cursor:pointer;border-bottom:2px solid transparent;transition:all .15s;white-space:nowrap}
+.tab-btn.active{color:var(--green);border-bottom-color:var(--green)}
+.all-bets-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:.5rem}
+.bet-chip{background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:3px 9px;font-size:12px;display:flex;align-items:center;gap:5px}
+.bet-chip .bname{color:var(--muted);font-size:11px}
+.bet-chip .bscore{font-weight:600}
+.bet-chip.dobro{border-color:var(--amber)}
+.bet-chip.me{border-color:var(--green)}
+.bet-chip .bpts{color:var(--green);font-size:11px}
+/* especiais */
+.esp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px;margin-bottom:1rem}
+.esp-card{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:.875rem}
+.esp-title{font-size:13px;font-weight:500;margin-bottom:6px;display:flex;align-items:center;gap:6px}
+.esp-pts{font-size:11px;color:var(--gold)}
+.esp-resposta{font-size:13px;color:var(--text);margin-top:4px}
+/* bonus publico */
+.bonus-pub-card{background:var(--bg3);border:1px solid rgba(255,179,71,0.25);border-radius:10px;padding:.875rem;margin-bottom:.625rem}
+.bonus-pub-jogo{font-size:11px;color:var(--muted);margin-bottom:4px}
+.bonus-pub-pergunta{font-size:13px;color:var(--amber);font-weight:500;margin-bottom:4px}
+.bonus-pub-resposta{font-size:13px;color:var(--green)}
+@media(max-width:600px){.game-teams{gap:3px}.team-name{font-size:11px}.score-box{width:36px}.rank-bar-wrap{display:none}.esp-grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="loading-overlay" id="loading"><div class="spinner"></div> Carregando...</div>
+
+<div class="login-wrap" id="login-page" style="display:none">
+  <div class="login-box">
+    <div class="login-title">⚽ BOLÃO <span style="color:var(--gold)">2026</span></div>
+    <div class="login-sub">Copa do Mundo — faça login para apostar</div>
+    <div class="form-group"><label class="form-label">Seu nome</label><select id="login-nome"><option value="">Selecione...</option></select></div>
+    <div class="form-group"><label class="form-label">Senha</label><input type="password" id="login-senha" placeholder="Digite sua senha" onkeydown="if(event.key==='Enter')fazerLogin()"></div>
+    <div class="error-msg" id="login-erro"></div>
+    <button class="btn primary" style="width:100%;margin-top:.5rem" onclick="fazerLogin()">Entrar</button>
+    <button class="btn" style="width:100%;margin-top:.5rem" onclick="verRanking()">📊 Ver ranking sem login</button>
+  </div>
+</div>
+
+<div id="app" style="display:none">
+  <header>
+    <div class="logo">⚽ BOLÃO <span>2026</span></div>
+    <nav>
+      <button class="nav-btn active" onclick="showPage('ranking',this)">🏆 Ranking</button>
+      <button class="nav-btn" onclick="showPage('jogos',this)">📋 Jogos</button>
+      <button class="nav-btn" id="nav-apostas" onclick="showPage('apostas',this)">✏️ Apostas</button>
+      <button class="nav-btn" id="nav-especiais" onclick="showPage('especiais',this)">⭐ Especiais</button>
+      <button class="nav-btn" onclick="showPage('bonus-pub',this)">💬 Bônus</button>
+      <button class="nav-btn" id="nav-admin" style="display:none" onclick="showPage('admin',this)">⚙️ Admin</button>
+    </nav>
+    <div class="user-info">
+      <span class="user-name" id="user-display"></span>
+      <button class="btn sm" onclick="logout()">Sair</button>
+    </div>
+  </header>
+  <main>
+
+    <!-- RANKING -->
+    <div id="page-ranking" class="page active">
+      <div class="section-head">🏆 Classificação</div>
+      <div class="metrics" id="metrics-area"></div>
+      <div class="card" id="ranking-list"></div>
+    </div>
+
+    <!-- JOGOS -->
+    <div id="page-jogos" class="page">
+      <div class="section-head">📋 Jogos e Apostas</div>
+      <div class="row"><div class="grow"><select id="jogos-fase" onchange="renderTodosJogos()">
+        <option value="grupos">Fase de grupos</option><option value="mata">Mata-mata</option>
+        <option value="oitavas">Oitavas</option><option value="quartas">Quartas</option>
+        <option value="semis">Semifinal</option><option value="final">Final</option>
+      </select></div></div>
+      <div id="todos-jogos-area"></div>
+    </div>
+
+    <!-- MINHAS APOSTAS -->
+    <div id="page-apostas" class="page">
+      <div class="section-head">✏️ Minhas Apostas</div>
+      <div class="row"><div class="grow"><select id="sel-fase" onchange="renderApostas()">
+        <option value="grupos">Fase de grupos</option><option value="mata">Mata-mata</option>
+        <option value="oitavas">Oitavas</option><option value="quartas">Quartas</option>
+        <option value="semis">Semifinal</option><option value="final">Final</option>
+      </select></div></div>
+      <div id="apostas-area"></div>
+    </div>
+
+    <!-- ESPECIAIS -->
+    <div id="page-especiais" class="page">
+      <div class="section-head">⭐ Palpites Especiais</div>
+      <div id="especiais-content"></div>
+    </div>
+
+    <!-- BÔNUS PÚBLICOS -->
+    <div id="page-bonus-pub" class="page">
+      <div class="section-head">💬 Perguntas Bônus</div>
+      <div class="info-bar">Perguntas bônus dos jogos com as respostas oficiais divulgadas pelo administrador.</div>
+      <div id="bonus-pub-content"></div>
+    </div>
+
+    <!-- ADMIN -->
+    <div id="page-admin" class="page">
+      <div class="section-head">⚙️ Painel Admin</div>
+      <div class="tab-row">
+        <button class="tab-btn active" onclick="showAdminTab('jogos',this)">Jogos</button>
+        <button class="tab-btn" onclick="showAdminTab('participantes',this)">Participantes</button>
+        <button class="tab-btn" onclick="showAdminTab('resultados',this)">Resultados</button>
+        <button class="tab-btn" onclick="showAdminTab('bonus',this)">Bônus</button>
+        <button class="tab-btn" onclick="showAdminTab('especiais-admin',this)">Especiais</button>
+      </div>
+
+      <!-- JOGOS -->
+      <div id="admin-jogos">
+        <div class="card">
+          <div style="font-size:14px;font-weight:500;margin-bottom:.75rem">Adicionar / Editar Jogo</div>
+          <div class="row">
+            <div class="grow"><label class="form-label">Nº</label><input type="number" id="j-id" placeholder="Ex: 73"></div>
+            <div class="grow"><label class="form-label">Fase</label><select id="j-fase">
+              <option value="grupos">Grupos</option><option value="mata">Mata-mata</option>
+              <option value="oitavas">Oitavas</option><option value="quartas">Quartas</option>
+              <option value="semis">Semifinal</option><option value="final">Final</option>
+            </select></div>
+          </div>
+          <div class="row">
+            <div class="grow"><label class="form-label">Time A (com emoji)</label><input type="text" id="j-timea" placeholder="🇧🇷 Brasil"></div>
+            <div class="grow"><label class="form-label">Time B (com emoji)</label><input type="text" id="j-timeb" placeholder="🇦🇷 Argentina"></div>
+          </div>
+          <div class="row">
+            <div class="grow"><label class="form-label">Prazo (Brasília)</label><input type="datetime-local" id="j-prazo"></div>
+            <div class="grow"><label class="form-label">Pergunta bônus (20pts)</label><input type="text" id="j-bonus" placeholder="Quem marca o 1º gol?"></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:.75rem">
+            <label style="font-size:13px;display:flex;align-items:center;gap:8px;cursor:pointer;color:var(--amber)">
+              <input type="checkbox" id="j-dobro" style="width:auto;accent-color:var(--amber)"> 🔥 Esse jogo vale pontos em DOBRO para todos
+            </label>
+          </div>
+          <button class="btn primary" onclick="salvarJogo()">💾 Salvar jogo</button>
+        </div>
+        <div class="card">
+          <div style="font-size:14px;font-weight:500;margin-bottom:.75rem">Jogos cadastrados <span id="jogos-count" style="color:var(--muted);font-size:12px"></span></div>
+          <div class="table-wrap"><table>
+            <thead><tr><th>#</th><th>Times</th><th>Fase</th><th>Prazo</th><th>Dobro</th><th>Bônus</th><th></th></tr></thead>
+            <tbody id="jogos-tbody"></tbody>
+          </table></div>
+        </div>
+      </div>
+
+      <!-- PARTICIPANTES -->
+      <div id="admin-participantes" style="display:none">
+        <div class="card">
+          <div style="font-size:14px;font-weight:500;margin-bottom:.75rem">Adicionar Participante</div>
+          <div class="row">
+            <div class="grow"><label class="form-label">Nome</label><input type="text" id="p-nome" placeholder="João Silva"></div>
+            <div class="grow"><label class="form-label">Senha</label><input type="text" id="p-senha" placeholder="copa2026"></div>
+            <button class="btn primary" style="margin-top:19px" onclick="salvarParticipante()">+ Adicionar</button>
+          </div>
+        </div>
+        <div class="card">
+          <div style="font-size:14px;font-weight:500;margin-bottom:.75rem">Participantes (<span id="part-count">0</span>)</div>
+          <div class="table-wrap"><table>
+            <thead><tr><th>Nome</th><th>Senha</th><th>Pts</th><th></th></tr></thead>
+            <tbody id="part-tbody"></tbody>
+          </table></div>
+        </div>
+      </div>
+
+      <!-- RESULTADOS -->
+      <div id="admin-resultados" style="display:none">
+        <div class="info-bar">Insira o resultado oficial. Os pontos são calculados automaticamente.</div>
+        <div class="row"><div class="grow"><select id="res-fase" onchange="renderAdminResultados()">
+          <option value="grupos">Grupos</option><option value="mata">Mata-mata</option>
+          <option value="oitavas">Oitavas</option><option value="quartas">Quartas</option>
+          <option value="semis">Semifinal</option><option value="final">Final</option>
+        </select></div></div>
+        <div id="resultados-area"></div>
+      </div>
+
+      <!-- BÔNUS -->
+      <div id="admin-bonus" style="display:none">
+        <div class="warn-bar">⭐ Valide as respostas bônus. Os 20pts NÃO dobram. Você também pode revelar a resposta correta publicamente.</div>
+        <div class="row"><div class="grow"><select id="bonus-fase" onchange="renderAdminBonus()">
+          <option value="grupos">Grupos</option><option value="mata">Mata-mata</option>
+          <option value="oitavas">Oitavas</option><option value="quartas">Quartas</option>
+          <option value="semis">Semifinal</option><option value="final">Final</option>
+        </select></div></div>
+        <div id="bonus-area"></div>
+      </div>
+
+      <!-- ESPECIAIS ADMIN -->
+      <div id="admin-especiais-admin" style="display:none">
+        <div class="warn-bar">⭐ Valide os palpites especiais. Selecione quem acertou cada categoria para atribuir os pontos.</div>
+        <div id="especiais-admin-area"></div>
+      </div>
+
+    </div>
+  </main>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const SUPABASE_URL = 'https://gfaragehhltbmpuzythv.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdmYXJhZ2VoaGx0Ym1wdXp5dGh2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA3ODUwODQsImV4cCI6MjA5NjM2MTA4NH0.Y03c8KcNwgZQTSDifcrmBflBZWHyds4K92pDzKT1AXk';
+const ADMIN_SENHA = 'admin2026copa';
+const ESPECIAIS_DEF = [
+  {key:'campeao',   label:'🥇 Campeão',       pts:300},
+  {key:'vice',      label:'🥈 Vice-Campeão',   pts:300},
+  {key:'terceiro',  label:'🥉 3º Colocado',    pts:300},
+  {key:'quarto',    label:'4️⃣ 4º Colocado',    pts:300},
+  {key:'artilheiro',label:'⚽ Artilheiro',     pts:250},
+  {key:'luva',      label:'🧤 Luva de Ouro',   pts:250},
+];
+
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+let currentUser=null, isAdmin=false;
+let allJogos=[], allParticipantes=[], allApostas=[], allEspeciais=[];
+
+async function init() {
+  const saved = sessionStorage.getItem('bolao_user');
+  if (saved) { const u=JSON.parse(saved); currentUser=u; isAdmin=u.isAdmin||false; await startApp(); }
+  else { await loadLoginSel(); show('login-page'); }
+  hide('loading');
+}
+
+async function loadLoginSel() {
+  const {data} = await sb.from('participantes').select('id,nome').order('nome');
+  const sel = document.getElementById('login-nome');
+  (data||[]).forEach(p=>{ const o=document.createElement('option'); o.value=p.id; o.textContent=p.nome; sel.appendChild(o); });
+  const o=document.createElement('option'); o.value='__admin__'; o.textContent='[ ADMINISTRADOR ]'; sel.appendChild(o);
+}
+
+async function fazerLogin() {
+  const id=document.getElementById('login-nome').value;
+  const senha=document.getElementById('login-senha').value.trim();
+  const erro=document.getElementById('login-erro'); erro.textContent='';
+  if(!id){erro.textContent='Selecione seu nome.';return;}
+  if(!senha){erro.textContent='Digite sua senha.';return;}
+  if(id==='__admin__'){
+    if(senha!==ADMIN_SENHA){erro.textContent='Senha incorreta.';return;}
+    currentUser={id:'__admin__',nome:'Administrador',isAdmin:true}; isAdmin=true;
+  } else {
+    const {data}=await sb.from('participantes').select('*').eq('id',id).single();
+    if(!data||data.senha!==senha){erro.textContent='Senha incorreta.';return;}
+    currentUser=data; isAdmin=false;
+  }
+  sessionStorage.setItem('bolao_user',JSON.stringify(currentUser));
+  await startApp(); hide('login-page');
+}
+
+function verRanking(){ currentUser={id:'__guest__',nome:'Visitante',isAdmin:false}; isAdmin=false; startApp(); hide('login-page'); }
+
+async function startApp() {
+  document.getElementById('user-display').textContent=currentUser.nome;
+  document.getElementById('nav-admin').style.display=isAdmin?'':'none';
+  const guest=currentUser.id==='__guest__';
+  document.getElementById('nav-apostas').style.display=guest?'none':'';
+  document.getElementById('nav-especiais').style.display=guest?'none':'';
+  show('app'); await loadData(); renderRanking();
+}
+
+async function loadData() {
+  const [j,p,a,e]=await Promise.all([
+    sb.from('jogos').select('*').order('id'),
+    sb.from('participantes').select('id,nome').order('nome'),
+    sb.from('apostas').select('*'),
+    sb.from('especiais').select('*')
+  ]);
+  allJogos=j.data||[]; allParticipantes=p.data||[]; allApostas=a.data||[]; allEspeciais=e.data||[];
+  if(currentUser&&!['__guest__','__admin__'].includes(currentUser.id)){
+    const myAp={}; allApostas.filter(a=>a.participante_id===currentUser.id).forEach(a=>{myAp[a.jogo_id]=a;});
+    window._myApostas=myAp;
+  }
+}
+
+function logout(){
+  sessionStorage.removeItem('bolao_user'); currentUser=null; isAdmin=false;
+  allJogos=[];allParticipantes=[];allApostas=[];allEspeciais=[];
+  hide('app');show('login-page');
+  document.getElementById('login-senha').value='';
+  document.getElementById('login-erro').textContent='';
+}
+
+// PONTUAÇÃO
+function calcPts(ga,gb,ra,rb,dobro){
+  if([ga,gb,ra,rb].some(v=>v===null||v===undefined||v===''))return 0;
+  const win=(a,b)=>Number(a)>Number(b)?'A':Number(a)<Number(b)?'B':'E';
+  let pts=0;
+  if(Number(ga)===Number(ra)&&Number(gb)===Number(rb))pts=40;
+  else if(win(ga,gb)===win(ra,rb)&&(Number(ga)===Number(ra)||Number(gb)===Number(rb)))pts=25;
+  else if(win(ga,gb)===win(ra,rb))pts=10;
+  return dobro?pts*2:pts;
+}
+
+function getPts(pid){
+  let tot=0;
+  allApostas.filter(a=>a.participante_id===pid).forEach(a=>{
+    const j=allJogos.find(x=>x.id===a.jogo_id);
+    if(!j||j.gols_a===null||j.gols_a===undefined)return;
+    tot+=calcPts(a.gols_a,a.gols_b,j.gols_a,j.gols_b,j.dobro);
+    if(a.bonus_correto)tot+=20;
+  });
+  allEspeciais.filter(e=>e.participante_id===pid&&e.correto).forEach(e=>{
+    const def=ESPECIAIS_DEF.find(d=>d.key===e.categoria);
+    if(def)tot+=def.pts;
+  });
+  return tot;
+}
+
+// RANKING
+async function renderRanking(){
+  await loadData();
+  const sorted=allParticipantes.slice().sort((a,b)=>getPts(b.id)-getPts(a.id));
+  const maxPts=Math.max(1,...allParticipantes.map(p=>getPts(p.id)));
+  const totalRes=allJogos.filter(j=>j.gols_a!==null&&j.gols_a!==undefined).length;
+  document.getElementById('metrics-area').innerHTML=`
+    <div class="metric"><div class="metric-val">${allParticipantes.length}</div><div class="metric-label">Participantes</div></div>
+    <div class="metric"><div class="metric-val">${allJogos.length}</div><div class="metric-label">Jogos</div></div>
+    <div class="metric"><div class="metric-val">${totalRes}</div><div class="metric-label">Resultados</div></div>
+    <div class="metric"><div class="metric-val">${allApostas.length}</div><div class="metric-label">Apostas</div></div>`;
+  const medals=['1º','2º','3º','4º','5º','6º','7º','8º','9º','10º'];
+  const pc=i=>i===0?'p1':i===1?'p2':i===2?'p3':'';
+  document.getElementById('ranking-list').innerHTML=sorted.map((p,i)=>{
+    const pts=getPts(p.id);
+    return `<div class="rank-item">
+      <div class="rank-pos ${pc(i)}">${medals[i]||i+1+'º'}</div>
+      <div class="rank-avatar">${initials(p.nome)}</div>
+      <div class="rank-name">${p.nome}</div>
+      <div class="rank-bar-wrap"><div class="rank-bar" style="width:${Math.round(pts/maxPts*100)}%"></div></div>
+      <div class="rank-pts">${pts} pts</div>
+    </div>`;
+  }).join('');
+}
+
+// JOGOS (todos visíveis)
+async function renderTodosJogos(){
+  await loadData();
+  const fase=document.getElementById('jogos-fase').value;
+  const jogos=allJogos.filter(j=>j.fase===fase);
+  const now=new Date();
+  if(!jogos.length){document.getElementById('todos-jogos-area').innerHTML='<div style="color:var(--muted)">Nenhum jogo nessa fase.</div>';return;}
+  document.getElementById('todos-jogos-area').innerHTML=jogos.map(j=>{
+    const prazoOk=!j.prazo||new Date(j.prazo)>now;
+    const prazoTxt=j.prazo?new Date(j.prazo).toLocaleString('pt-BR'):'—';
+    const resDisp=j.gols_a!==null&&j.gols_a!==undefined;
+    const apostasJogo=allApostas.filter(a=>a.jogo_id===j.id);
+    const betsHtml=apostasJogo.length?apostasJogo.map(a=>{
+      const part=allParticipantes.find(p=>p.id===a.participante_id);
+      const pts=resDisp?calcPts(a.gols_a,a.gols_b,j.gols_a,j.gols_b,j.dobro):null;
+      const isMe=currentUser&&a.participante_id===currentUser.id;
+      return `<div class="bet-chip ${j.dobro?'dobro':''} ${isMe?'me':''}">
+        <span class="bname">${part?part.nome.split(' ')[0]:'?'}</span>
+        <span class="bscore">${a.gols_a??'—'}×${a.gols_b??'—'}</span>
+        ${pts!==null?`<span class="bpts">+${pts}pts</span>`:''}
+        ${a.bonus_correto?'<span style="color:var(--amber);font-size:10px">⭐</span>':''}
+      </div>`;
+    }).join(''):'<span style="color:var(--muted);font-size:12px">Sem apostas</span>';
+    return `<div class="game-card">
+      <div class="game-header">
+        <span class="game-num">Jogo ${j.id}</span>
+        ${j.dobro?'<span class="dobro-badge">🔥 Dobro</span>':''}
+        <span class="game-prazo ${prazoOk?'prazo-ok':'prazo-vencido'}">${prazoOk?'⏱ até ':'🔒 '}${prazoTxt}</span>
+        ${resDisp?`<span class="pts-badge">✓ ${j.gols_a}×${j.gols_b}</span>`:''}
+      </div>
+      <div class="game-teams">
+        <div class="team-name right">${j.time_a}</div>
+        <div style="font-size:20px;font-weight:700;color:${resDisp?'var(--green)':'var(--muted)'}">${resDisp?j.gols_a:'?'}</div>
+        <div class="sep">×</div>
+        <div style="font-size:20px;font-weight:700;color:${resDisp?'var(--green)':'var(--muted)'}">${resDisp?j.gols_b:'?'}</div>
+        <div class="team-name">${j.time_b}</div>
+      </div>
+      ${j.pergunta_bonus?`<div style="font-size:12px;color:var(--amber);margin-bottom:.4rem">⭐ ${j.pergunta_bonus}</div>`:''}
+      <div class="all-bets-row">${betsHtml}</div>
+    </div>`;
+  }).join('');
+}
+
+// MINHAS APOSTAS
+async function renderApostas(){
+  await loadData();
+  const fase=document.getElementById('sel-fase').value;
+  const jogos=allJogos.filter(j=>j.fase===fase);
+  const now=new Date();
+  const myAp=window._myApostas||{};
+  if(!jogos.length){document.getElementById('apostas-area').innerHTML='<div style="color:var(--muted)">Nenhum jogo nessa fase.</div>';return;}
+  document.getElementById('apostas-area').innerHTML=jogos.map(j=>{
+    const ap=myAp[j.id]||{};
+    const prazoOk=!j.prazo||new Date(j.prazo)>now;
+    const prazoTxt=j.prazo?new Date(j.prazo).toLocaleString('pt-BR'):'Sem prazo';
+    const resDisp=j.gols_a!==null&&j.gols_a!==undefined;
+    const pts=resDisp?calcPts(ap.gols_a,ap.gols_b,j.gols_a,j.gols_b,j.dobro):null;
+    const apostaFeita=ap.gols_a!==undefined&&ap.gols_a!==null;
+    return `<div class="game-card ${apostaFeita?'mine':''}">
+      <div class="game-header">
+        <span class="game-num">Jogo ${j.id}</span>
+        ${j.dobro?'<span class="dobro-badge">🔥 Pontos em dobro</span>':''}
+        <span class="game-prazo ${prazoOk?'prazo-ok':'prazo-vencido'}">${prazoOk?'⏱ até ':'🔒 '}${prazoTxt}</span>
+        ${pts!==null?`<span class="pts-badge">+${pts} pts</span>`:''}
+        ${ap.bonus_correto?'<span class="pts-badge">+20 bônus ⭐</span>':''}
+      </div>
+      <div class="game-teams">
+        <div class="team-name right">${j.time_a}</div>
+        <input class="score-box" type="number" min="0" max="30" placeholder="—" value="${ap.gols_a??''}" ${!prazoOk?'disabled':''} id="ga-${j.id}">
+        <div class="sep">×</div>
+        <input class="score-box" type="number" min="0" max="30" placeholder="—" value="${ap.gols_b??''}" ${!prazoOk?'disabled':''} id="gb-${j.id}">
+        <div class="team-name">${j.time_b}</div>
+      </div>
+      ${j.pergunta_bonus?`<div class="bonus-row">
+        <div class="bonus-label">⭐ ${j.pergunta_bonus}</div>
+        <input type="text" placeholder="Sua resposta" value="${ap.resposta_bonus||''}" ${!prazoOk?'disabled':''} id="bns-${j.id}">
+      </div>`:''}
+      ${prazoOk?`<button class="btn primary sm" onclick="salvarAposta(${j.id})">💾 Salvar</button>`:'<div style="font-size:11px;color:var(--danger);margin-top:.4rem">🔒 Prazo encerrado</div>'}
+      ${resDisp?`<div style="font-size:11px;color:var(--muted);margin-top:.4rem">Resultado: ${j.gols_a}×${j.gols_b}</div>`:''}
+    </div>`;
+  }).join('');
+}
+
+async function salvarAposta(jid){
+  const j=allJogos.find(x=>x.id===jid);
+  if(j&&j.prazo&&new Date(j.prazo)<new Date()){toast('🔒 Prazo encerrado!');return;}
+  const ga=document.getElementById('ga-'+jid)?.value;
+  const gb=document.getElementById('gb-'+jid)?.value;
+  const bns=document.getElementById('bns-'+jid)?.value||null;
+  const payload={participante_id:currentUser.id,jogo_id:jid,gols_a:ga!==''?Number(ga):null,gols_b:gb!==''?Number(gb):null,resposta_bonus:bns};
+  const {error}=await sb.from('apostas').upsert(payload,{onConflict:'participante_id,jogo_id'});
+  if(error){toast('Erro: '+error.message);return;}
+  if(!window._myApostas)window._myApostas={};
+  window._myApostas[jid]=payload;
+  toast('✅ Aposta salva!'); renderApostas();
+}
+
+// ESPECIAIS (participante)
+async function renderEspeciais(){
+  await loadData();
+  const pid=currentUser.id;
+  const myEsp={};
+  allEspeciais.filter(e=>e.participante_id===pid).forEach(e=>{myEsp[e.categoria]=e;});
+  document.getElementById('especiais-content').innerHTML=`
+    <div class="info-bar">Palpites especiais valem de 250 a 300 pts. Você pode editar até o prazo definido pelo admin.</div>
+    <div class="esp-grid">${ESPECIAIS_DEF.map(def=>{
+      const e=myEsp[def.key]||{};
+      return `<div class="esp-card">
+        <div class="esp-title">${def.label} <span class="esp-pts">${def.pts}pts</span> ${e.correto?'<span class="pts-badge">✓ Acertou!</span>':''}</div>
+        <input type="text" placeholder="Seu palpite" value="${e.resposta||''}" id="esp-${def.key}">
+        <button class="btn primary sm" style="margin-top:6px;width:100%" onclick="salvarEspecial('${def.key}')">💾 Salvar</button>
+      </div>`;
+    }).join('')}</div>`;
+}
+
+async function salvarEspecial(key){
+  const val=document.getElementById('esp-'+key)?.value.trim();
+  if(!val){toast('Digite seu palpite.');return;}
+  const payload={participante_id:currentUser.id,categoria:key,resposta:val};
+  const {error}=await sb.from('especiais').upsert(payload,{onConflict:'participante_id,categoria'});
+  if(error){toast('Erro: '+error.message);return;}
+  toast('✅ Palpite salvo!'); await loadData(); renderEspeciais();
+}
+
+// BÔNUS PÚBLICOS
+async function renderBonusPub(){
+  await loadData();
+  const jogosComBonus=allJogos.filter(j=>j.pergunta_bonus&&j.resposta_bonus_publica);
+  if(!jogosComBonus.length){
+    document.getElementById('bonus-pub-content').innerHTML='<div style="color:var(--muted)">Nenhuma resposta bônus divulgada ainda.</div>';return;
+  }
+  document.getElementById('bonus-pub-content').innerHTML=jogosComBonus.map(j=>`
+    <div class="bonus-pub-card">
+      <div class="bonus-pub-jogo">Jogo ${j.id} — ${j.time_a} × ${j.time_b}</div>
+      <div class="bonus-pub-pergunta">⭐ ${j.pergunta_bonus}</div>
+      <div class="bonus-pub-resposta">✅ Resposta oficial: ${j.resposta_bonus_publica}</div>
+    </div>`).join('');
+}
+
+// ADMIN JOGOS
+async function renderAdminJogos(){
+  await loadData();
+  document.getElementById('jogos-count').textContent=`(${allJogos.length})`;
+  document.getElementById('jogos-tbody').innerHTML=allJogos.map(j=>`
+    <tr>
+      <td>${j.id}</td>
+      <td style="font-size:12px">${j.time_a} × ${j.time_b}</td>
+      <td><span class="fase-badge">${j.fase}</span></td>
+      <td style="font-size:11px">${j.prazo?new Date(j.prazo).toLocaleString('pt-BR'):'—'}</td>
+      <td>${j.dobro?'🔥':'—'}</td>
+      <td style="font-size:11px;max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${j.pergunta_bonus||'—'}</td>
+      <td><button class="btn sm" onclick="editarJogo(${j.id})">✏️</button></td>
+    </tr>`).join('');
+}
+
+function editarJogo(id){
+  const j=allJogos.find(x=>x.id===id);if(!j)return;
+  document.getElementById('j-id').value=j.id;
+  document.getElementById('j-timea').value=j.time_a;
+  document.getElementById('j-timeb').value=j.time_b;
+  document.getElementById('j-fase').value=j.fase;
+  document.getElementById('j-bonus').value=j.pergunta_bonus||'';
+  document.getElementById('j-dobro').checked=!!j.dobro;
+  if(j.prazo){const d=new Date(j.prazo);d.setMinutes(d.getMinutes()-d.getTimezoneOffset());document.getElementById('j-prazo').value=d.toISOString().slice(0,16);}
+  window.scrollTo(0,0);
+}
+
+async function salvarJogo(){
+  const id=Number(document.getElementById('j-id').value);
+  const time_a=document.getElementById('j-timea').value.trim();
+  const time_b=document.getElementById('j-timeb').value.trim();
+  const fase=document.getElementById('j-fase').value;
+  const prazoVal=document.getElementById('j-prazo').value;
+  const pergunta_bonus=document.getElementById('j-bonus').value.trim()||null;
+  const dobro=document.getElementById('j-dobro').checked;
+  if(!id||!time_a||!time_b){toast('Preencha nº, time A e time B.');return;}
+  const prazo=prazoVal?new Date(prazoVal).toISOString():null;
+  const {error}=await sb.from('jogos').upsert({id,time_a,time_b,fase,prazo,pergunta_bonus,dobro},{onConflict:'id'});
+  if(error){toast('Erro: '+error.message);return;}
+  toast('✅ Jogo salvo!'); await loadData(); renderAdminJogos();
+  ['j-id','j-timea','j-timeb','j-bonus','j-prazo'].forEach(x=>document.getElementById(x).value='');
+  document.getElementById('j-dobro').checked=false;
+}
+
+// ADMIN PARTICIPANTES
+async function renderAdminParticipantes(){
+  const {data:todos}=await sb.from('participantes').select('*').order('nome');
+  await loadData();
+  document.getElementById('part-count').textContent=(todos||[]).length;
+  document.getElementById('part-tbody').innerHTML=(todos||[]).map(p=>`
+    <tr>
+      <td>${p.nome}</td>
+      <td><code style="font-size:11px">${p.senha}</code></td>
+      <td>${getPts(p.id)} pts</td>
+      <td><button class="btn danger sm" onclick="deletarParticipante('${p.id}','${p.nome}')">🗑</button></td>
+    </tr>`).join('');
+}
+
+async function salvarParticipante(){
+  const nome=document.getElementById('p-nome').value.trim();
+  const senha=document.getElementById('p-senha').value.trim();
+  if(!nome||!senha){toast('Preencha nome e senha.');return;}
+  const {error}=await sb.from('participantes').insert({nome,senha});
+  if(error){toast('Erro: '+error.message);return;}
+  toast('✅ Participante adicionado!');
+  document.getElementById('p-nome').value='';document.getElementById('p-senha').value='';
+  await loadData(); renderAdminParticipantes();
+}
+
+async function deletarParticipante(id,nome){
+  if(!confirm(`Excluir ${nome} e todas as apostas?`))return;
+  await sb.from('apostas').delete().eq('participante_id',id);
+  await sb.from('especiais').delete().eq('participante_id',id);
+  await sb.from('participantes').delete().eq('id',id);
+  toast('Removido.'); await loadData(); renderAdminParticipantes();
+}
+
+// ADMIN RESULTADOS
+async function renderAdminResultados(){
+  await loadData();
+  const fase=document.getElementById('res-fase').value;
+  const jogos=allJogos.filter(j=>j.fase===fase);
+  if(!jogos.length){document.getElementById('resultados-area').innerHTML='<div style="color:var(--muted)">Nenhum jogo nessa fase.</div>';return;}
+  document.getElementById('resultados-area').innerHTML=jogos.map(j=>{
+    const ok=j.gols_a!==null&&j.gols_a!==undefined;
+    return `<div class="game-card">
+      <div class="game-header">
+        <span class="game-num">Jogo ${j.id}</span>
+        ${j.dobro?'<span class="dobro-badge">🔥 Dobro ativo</span>':''}
+        <span class="${ok?'pts-badge':'game-num'}">${ok?`✓ ${j.gols_a}×${j.gols_b}`:'sem resultado'}</span>
+      </div>
+      <div class="game-teams">
+        <div class="team-name right">${j.time_a}</div>
+        <input class="score-box" type="number" min="0" max="30" placeholder="—" value="${ok?j.gols_a:''}" id="rga-${j.id}">
+        <div class="sep">×</div>
+        <input class="score-box" type="number" min="0" max="30" placeholder="—" value="${j.gols_b!==null&&j.gols_b!==undefined?j.gols_b:''}" id="rgb-${j.id}">
+        <div class="team-name">${j.time_b}</div>
+      </div>
+      <button class="btn primary sm" onclick="salvarResultado(${j.id})">⚡ Salvar resultado</button>
+    </div>`;
+  }).join('');
+}
+
+async function salvarResultado(jid){
+  const ga=document.getElementById('rga-'+jid)?.value;
+  const gb=document.getElementById('rgb-'+jid)?.value;
+  const {error}=await sb.from('jogos').update({gols_a:ga!==''?Number(ga):null,gols_b:gb!==''?Number(gb):null}).eq('id',jid);
+  if(error){toast('Erro: '+error.message);return;}
+  toast('⚡ Resultado salvo!'); await loadData(); renderAdminResultados(); renderRanking();
+}
+
+// ADMIN BÔNUS
+async function renderAdminBonus(){
+  await loadData();
+  const fase=document.getElementById('bonus-fase').value;
+  const jogos=allJogos.filter(j=>j.fase===fase&&j.pergunta_bonus);
+  if(!jogos.length){document.getElementById('bonus-area').innerHTML='<div style="color:var(--muted)">Nenhum jogo com bônus nessa fase.</div>';return;}
+  let html='';
+  for(const j of jogos){
+    const apostasJogo=allApostas.filter(a=>a.jogo_id===j.id&&a.resposta_bonus);
+    html+=`<div class="game-card">
+      <div class="game-header"><span class="game-num">Jogo ${j.id} — ${j.time_a} × ${j.time_b}</span></div>
+      <div style="font-size:13px;color:var(--amber);margin-bottom:.5rem">⭐ ${j.pergunta_bonus}</div>
+      <div class="row" style="margin-bottom:.75rem">
+        <div class="grow"><label class="form-label">Revelar resposta correta publicamente</label>
+          <input type="text" placeholder="Digite a resposta oficial" value="${j.resposta_bonus_publica||''}" id="resp-pub-${j.id}">
+        </div>
+        <button class="btn primary sm" style="margin-top:19px" onclick="salvarRespostaPublica(${j.id})">📢 Publicar</button>
+      </div>
+      ${apostasJogo.length?apostasJogo.map(a=>{
+        const part=allParticipantes.find(p=>p.id===a.participante_id);
+        return `<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-top:1px solid var(--border)">
+          <div style="flex:1;font-size:13px">${part?part.nome:'?'}</div>
+          <div style="font-size:13px;flex:1;color:var(--muted)">"${a.resposta_bonus}"</div>
+          <button class="btn sm ${a.bonus_correto?'primary':''}" onclick="toggleBonus('${a.id}',${!a.bonus_correto},${j.id})">
+            ${a.bonus_correto?'✓ Correto':'Marcar correto'}
+          </button>
+        </div>`;
+      }).join(''):'<div style="color:var(--muted);font-size:12px">Sem respostas ainda.</div>'}
+    </div>`;
+  }
+  document.getElementById('bonus-area').innerHTML=html||'<div style="color:var(--muted)">Nenhuma resposta nessa fase.</div>';
+}
+
+async function salvarRespostaPublica(jid){
+  const val=document.getElementById('resp-pub-'+jid)?.value.trim();
+  const {error}=await sb.from('jogos').update({resposta_bonus_publica:val||null}).eq('id',jid);
+  if(error){toast('Erro: '+error.message);return;}
+  toast('📢 Resposta publicada!'); await loadData(); renderAdminBonus();
+}
+
+async function toggleBonus(apostaid,correto,jid){
+  const {error}=await sb.from('apostas').update({bonus_correto:correto}).eq('id',apostaid);
+  if(error){toast('Erro: '+error.message);return;}
+  toast(correto?'⭐ +20 pts atribuídos!':'Bônus removido.'); await loadData(); renderAdminBonus(); renderRanking();
+}
+
+// ADMIN ESPECIAIS
+async function renderEspeciaisAdmin(){
+  await loadData();
+  let html='';
+  for(const def of ESPECIAIS_DEF){
+    const respostas=allEspeciais.filter(e=>e.categoria===def.key);
+    html+=`<div class="game-card">
+      <div class="game-header"><span style="font-size:14px;font-weight:500">${def.label}</span><span class="pts-badge">${def.pts} pts</span></div>
+      ${respostas.length?respostas.map(e=>{
+        const part=allParticipantes.find(p=>p.id===e.participante_id);
+        return `<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-top:1px solid var(--border)">
+          <div style="flex:1;font-size:13px">${part?part.nome:'?'}</div>
+          <div style="font-size:13px;flex:1;color:var(--muted)">"${e.resposta}"</div>
+          <button class="btn sm ${e.correto?'primary':''}" onclick="toggleEspecial('${e.id}',${!e.correto})">
+            ${e.correto?'✓ Correto':'Marcar correto'}
+          </button>
+        </div>`;
+      }).join(''):'<div style="color:var(--muted);font-size:12px;padding-top:6px">Nenhum palpite ainda.</div>'}
+    </div>`;
+  }
+  document.getElementById('especiais-admin-area').innerHTML=html;
+}
+
+async function toggleEspecial(espid,correto){
+  const {error}=await sb.from('especiais').update({correto}).eq('id',espid);
+  if(error){toast('Erro: '+error.message);return;}
+  toast(correto?'✅ Pontos atribuídos!':'Pontos removidos.'); await loadData(); renderEspeciaisAdmin(); renderRanking();
+}
+
+// UTILS
+function initials(n){return n.split(' ').slice(0,2).map(w=>w[0]).join('').toUpperCase();}
+
+function showPage(id,btn){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  if(btn)btn.classList.add('active');
+  if(id==='ranking')renderRanking();
+  if(id==='jogos')renderTodosJogos();
+  if(id==='apostas')renderApostas();
+  if(id==='especiais')renderEspeciais();
+  if(id==='bonus-pub')renderBonusPub();
+  if(id==='admin'){renderAdminJogos();renderAdminParticipantes();renderAdminResultados();}
+}
+
+function showAdminTab(tab,btn){
+  ['jogos','participantes','resultados','bonus','especiais-admin'].forEach(t=>{
+    document.getElementById('admin-'+t).style.display=t===tab?'':'none';
+  });
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  if(tab==='resultados')renderAdminResultados();
+  if(tab==='participantes')renderAdminParticipantes();
+  if(tab==='bonus')renderAdminBonus();
+  if(tab==='especiais-admin')renderEspeciaisAdmin();
+  if(tab==='jogos')renderAdminJogos();
+}
+
+function show(id){document.getElementById(id).style.display='';}
+function hide(id){document.getElementById(id).style.display='none';}
+function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
+
+init();
+</script>
+</body>
+</html>
