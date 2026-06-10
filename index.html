@@ -622,7 +622,8 @@ async function renderGrupos(){
       html+='<div class="grupo-pos-row">';
       html+='<span class="grupo-pos-label">'+pos+'º lugar</span>';
       html+='<input type="text" placeholder="Seleção" value="'+(g.selecao||'')+'" id="grp'+gr+''+pos+'"'+(fechado?' disabled':'')+' >';
-      if(g.correto)html+='<span class="pts-badge" style="flex-shrink:0">OK</span>';
+      if(g.correto) html+='<span class="pts-badge" style="flex-shrink:0">✓ Correto</span>';
+      else if(g.selecao) html+='<span style="flex-shrink:0;font-size:11px;padding:2px 6px;border-radius:10px;background:var(--bg3);color:var(--muted)">pendente</span>';
       html+='</div>';
     });
     if(!fechado){
