@@ -938,7 +938,7 @@ async function renderAdminBonus(){
     html+='</div>';
     html+='<button class="btn primary sm" style="margin-top:19px" onclick="pubBonus('+j.id+')">Publicar</button>';
     html+='</div>';
-    apJogo.forEach(function(a){
+    apJogo.slice().sort(function(a,b){var pa=parts.find(function(p){return p.id===a.participante_id;});var pb=parts.find(function(p){return p.id===b.participante_id;});return (pa?pa.nome:'').localeCompare(pb?pb.nome:'');}).forEach(function(a){
       var part=parts.find(p=>p.id===a.participante_id);
       html+='<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-top:1px solid var(--border)">';
       html+='<div style="flex:1;font-size:13px">'+(part?part.nome:'?')+'</div>';
@@ -972,7 +972,7 @@ async function renderAdminEsp(){
     var resp=especiais.filter(e=>e.categoria===def.key);
     html+='<div class="game-card">';
     html+='<div class="game-header"><span style="font-size:14px;font-weight:500">'+def.label+'</span><span class="pts-badge">'+def.pts+' pts</span></div>';
-    resp.forEach(function(e){
+    resp.slice().sort(function(a,b){var pa=parts.find(function(p){return p.id===a.participante_id;});var pb=parts.find(function(p){return p.id===b.participante_id;});return (pa?pa.nome:'').localeCompare(pb?pb.nome:'');}).forEach(function(e){
       var part=parts.find(p=>p.id===e.participante_id);
       html+='<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-top:1px solid var(--border)">';
       html+='<div style="flex:1;font-size:13px">'+(part?part.nome:'?')+'</div>';
@@ -1002,7 +1002,7 @@ async function renderAdminGrupos(){
     [1,2,3,4].forEach(function(pos){
       var pPos=pGr.filter(g=>g.posicao===pos);
       html+='<div style="margin-bottom:.75rem"><div style="font-size:12px;color:var(--muted);margin-bottom:4px">'+pos+'º lugar</div>';
-      pPos.forEach(function(g){
+      pPos.slice().sort(function(a,b){var pa=parts.find(function(p){return p.id===a.participante_id;});var pb=parts.find(function(p){return p.id===b.participante_id;});return (pa?pa.nome:'').localeCompare(pb?pb.nome:'');}).forEach(function(g){
         var part=parts.find(p=>p.id===g.participante_id);
         html+='<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)">';
         html+='<span style="flex:1;font-size:13px">'+(part?part.nome:'?')+'</span>';
