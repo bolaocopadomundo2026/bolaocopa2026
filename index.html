@@ -626,8 +626,10 @@ async function renderGrupos(){
       html+='<div class="grupo-pos-row">';
       html+='<span class="grupo-pos-label">'+pos+'º lugar</span>';
       html+='<input type="text" placeholder="Seleção" value="'+(g.selecao||'')+'" id="grp'+gr+''+pos+'"'+(fechado?' disabled':'')+' >';
+      html+='<span id="grp-badge-'+gr+'-'+pos+'">';
       if(g.correto) html+='<span class="pts-badge" style="flex-shrink:0">✓ Correto</span>';
       else if(g.selecao) html+='<span style="flex-shrink:0;font-size:11px;padding:2px 6px;border-radius:10px;background:var(--bg3);color:var(--muted)">pendente</span>';
+      html+='</span>';
       html+='</div>';
     });
     if(!fechado){
@@ -650,7 +652,20 @@ async function salvarGrp(gr){
   });
   var res=await Promise.all(ops);
   var erros=res.filter(r=>r.error);if(erros.length){toast('Erro: '+erros[0].error.message);return;}
-  toast('Grupo '+gr+' salvo!');await load();renderGrupos();
+  toast('Grupo '+gr+' salvo!');
+  await load();
+  // Atualiza só os badges sem apagar os campos
+  var pid=user.id;
+  var myGrp={};grupos.filter(g=>g.participante_id===pid).forEach(g=>{myGrp[g.grupo+'-'+g.posicao]=g;});
+  [1,2,3,4].forEach(function(pos){
+    var g=myGrp[gr+'-'+pos];
+    var badgeId='grp-badge-'+gr+'-'+pos;
+    var badge=D(badgeId);
+    if(badge){
+      if(g&&g.correto) badge.innerHTML='<span style="flex-shrink:0;font-size:11px;padding:2px 6px;border-radius:10px;background:var(--green-dim);color:var(--green);font-weight:600">✓ Correto</span>';
+      else if(g&&g.selecao) badge.innerHTML='<span style="flex-shrink:0;font-size:11px;padding:2px 6px;border-radius:10px;background:var(--bg3);color:var(--muted)">pendente</span>';
+    }
+  });
 }
 
 async function renderPont(){
