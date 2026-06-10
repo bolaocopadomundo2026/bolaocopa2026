@@ -580,7 +580,20 @@ async function salvarAp(jid){
   var payload={participante_id:user.id,jogo_id:jid,gols_a:Number(ga),gols_b:Number(gb),resposta_bonus:bns};
   var {error}=await sb.from('apostas').upsert(payload,{onConflict:'participante_id,jogo_id'});
   if(error){toast('Erro: '+error.message);return;}
-  toast('✅ Aposta salva!');await load();renderApostas();
+  // Sai do modo de edição após salvar
+  if(window._editando)delete window._editando[jid];
+  toast('✅ Palpite salvo e bloqueado!');await load();renderApostas();
+}
+
+function iniciarEdicao(jid){
+  if(!window._editando)window._editando={};
+  window._editando[jid]=true;
+  renderApostas();
+}
+
+function cancelarEdicao(jid){
+  if(window._editando)delete window._editando[jid];
+  renderApostas();
 }
 
 async function renderEspeciais(){
