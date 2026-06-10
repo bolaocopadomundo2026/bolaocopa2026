@@ -649,7 +649,7 @@ async function salvarGrp(gr){
     ops.push(sb.from('palpites_grupos').upsert({participante_id:user.id,grupo:gr,posicao:pos,selecao:val||null},{onConflict:'participante_id,grupo,posicao'}));
   });
   var res=await Promise.all(ops);
-  if(res.some(r=>r.error)){toast('Erro ao salvar.');return;}
+  var erros=res.filter(r=>r.error);if(erros.length){toast('Erro: '+erros[0].error.message);return;}
   toast('Grupo '+gr+' salvo!');await load();renderGrupos();
 }
 
@@ -897,11 +897,20 @@ async function delPartic(id,nome){
 async function renderAdminResult(){
   await load();
   var fase=D('res-fase').value;
-  var jg=jogos.filter(j=>j.fase===fase);
-  if(!jg.length){D('result-area').innerHTML='<div style="color:var(--muted)">Nenhum jogo nessa fase.</div>';return;}
+  var jgAll=jogos.filter(j=>j.fase===fase);
+  if(!jgAll.length){D('result-area').innerHTML='<div style="color:var(--muted)">Nenhum jogo nessa fase.</div>';return;}
+  // Sem resultado primeiro, com resultado por último
+  var jgSemRes=jgAll.filter(j=>j.gols_a===null||j.gols_a===undefined);
+  var jgComRes=jgAll.filter(j=>j.gols_a!==null&&j.gols_a!==undefined);
+  var jg=jgSemRes.concat(jgComRes);
   var html='';
+  var mostrouDivRes=false;
   jg.forEach(function(j){
     var ok=j.gols_a!==null&&j.gols_a!==undefined;
+    if(ok&&!mostrouDivRes){
+      mostrouDivRes=true;
+      html+='<div style="display:flex;align-items:center;gap:8px;margin:1rem 0 .5rem"><div style="flex:1;height:1px;background:var(--border)"></div><span style="font-size:11px;color:var(--muted);white-space:nowrap">Resultados já lançados</span><div style="flex:1;height:1px;background:var(--border)"></div></div>';
+    }
     html+='<div class="game-card">';
     html+='<div class="game-header"><span class="game-num">Jogo '+j.id+'</span>'+(j.dobro?'<span class="dobro-badge">🔥 Dobro</span>':'')+'<span class="'+(ok?'pts-badge':'game-num')+'">'+(ok?j.gols_a+'x'+j.gols_b:'sem resultado')+'</span></div>';
     html+='<div class="game-teams">';
