@@ -225,7 +225,7 @@ tr:last-child td{border-bottom:none}
         <div class="card">
           <div style="font-size:14px;font-weight:500;margin-bottom:.75rem">Jogos cadastrados <span id="jogos-count" style="color:var(--muted);font-size:12px"></span></div>
           <div class="table-wrap"><table>
-            <thead><tr><th>#</th><th>Times</th><th>Fase</th><th>Prazo</th><th>Ativo</th><th>2x</th><th>Bonus</th><th></th></tr></thead>
+            <thead><tr><th>#</th><th>Times</th><th>Fase</th><th>Prazo</th><th>Lançado</th><th>Dobro</th><th>Pergunta Bônus</th><th></th></tr></thead>
             <tbody id="jogos-tbody"></tbody>
           </table></div>
         </div>
@@ -572,11 +572,15 @@ async function salvarAp(jid){
   if(j&&!prazoOk(j.prazo)){toast('Prazo encerrado!');return;}
   var ga=D('ga'+jid)?D('ga'+jid).value:'';
   var gb=D('gb'+jid)?D('gb'+jid).value:'';
-  var bns=D('bns'+jid)?D('bns'+jid).value||null:null;
-  var payload={participante_id:user.id,jogo_id:jid,gols_a:ga!==''?Number(ga):null,gols_b:gb!==''?Number(gb):null,resposta_bonus:bns};
+  var bns=D('bns'+jid)?D('bns'+jid).value.trim()||null:null;
+  // Validação: placar obrigatório
+  if(ga===''||gb===''){toast('⚠️ Preencha o placar dos dois times!');return;}
+  // Validação: pergunta bônus obrigatória se existir
+  if(j&&j.pergunta_bonus&&!bns){toast('⚠️ Preencha também a pergunta bônus!');return;}
+  var payload={participante_id:user.id,jogo_id:jid,gols_a:Number(ga),gols_b:Number(gb),resposta_bonus:bns};
   var {error}=await sb.from('apostas').upsert(payload,{onConflict:'participante_id,jogo_id'});
   if(error){toast('Erro: '+error.message);return;}
-  toast('Aposta salva!');await load();renderApostas();
+  toast('✅ Aposta salva!');await load();renderApostas();
 }
 
 async function renderEspeciais(){
