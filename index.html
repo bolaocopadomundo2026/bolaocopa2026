@@ -838,14 +838,20 @@ async function renderAdminJogos(){
   await load();
   D('jogos-count').textContent='('+jogos.length+')';
   var html='';
-  jogos.forEach(function(j){
+  // Inativos primeiro, ativos por último
+  var jgSorted=jogos.slice().sort(function(a,b){
+    if(!!a.ativo===!!b.ativo)return a.id-b.id;
+    return a.ativo?1:-1;
+  });
+  jgSorted.forEach(function(j){
     html+='<tr>';
     html+='<td>'+j.id+'</td>';
     html+='<td style="font-size:12px">'+j.time_a+' x '+j.time_b+'</td>';
     html+='<td><span class="fase-badge">'+j.fase+'</span></td>';
     html+='<td style="font-size:11px">'+(j.prazo?toBSB(j.prazo):'—')+'</td>';
-    html+='<td>'+(j.dobro?'2x':'—')+'</td>';
-    html+='<td style="font-size:11px;max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+(j.pergunta_bonus||'—')+'</td>';
+    html+='<td style="text-align:center">'+(j.ativo?'✅':'⛔')+'</td>';
+    html+='<td style="text-align:center">'+(j.dobro?'🔥':'—')+'</td>';
+    html+='<td style="font-size:11px;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+(j.pergunta_bonus||'—')+'</td>';
     html+='<td><button class="btn sm" onclick="editJogo('+j.id+')">Edit</button></td>';
     html+='</tr>';
   });
