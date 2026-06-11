@@ -384,9 +384,9 @@ async function load(){
   const [j,p,a,e,g]=await Promise.all([
     sb.from('jogos').select('*').order('id'),
     sb.from('participantes').select('id,nome').order('nome'),
-    sb.from('apostas').select('*'),
+    sb.from('apostas').select('*').limit(10000),
     sb.from('especiais').select('*'),
-    sb.from('palpites_grupos').select('id,participante_id,grupo,posicao,selecao,correto')
+    sb.from('palpites_grupos').select('id,participante_id,grupo,posicao,selecao,correto').limit(5000)
   ]);
   jogos=j.data||[];parts=p.data||[];apostas=a.data||[];especiais=e.data||[];grupos=g.data||[];
 }
