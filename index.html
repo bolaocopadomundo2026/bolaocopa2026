@@ -1724,5 +1724,39 @@ async function exportarExcel(){
   D('export-status').textContent='Pronto! Arquivo Excel gerado com 5 abas.';
 }
 
+function showPage(id,btn){
+  document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active');});
+  document.querySelectorAll('.nav-btn').forEach(function(b){b.classList.remove('active');});
+  D('page-'+id).classList.add('active');
+  if(btn)btn.classList.add('active');
+  if(id==='ranking')renderRanking();
+  if(id==='jogos')renderJogos();
+  if(id==='apostas')renderApostas();
+  if(id==='especiais')renderEspeciais();
+  if(id==='grupos')renderGrupos();
+  if(id==='pont')renderPont();
+  if(id==='bonus-pub')renderBonusPub();
+  if(id==='regras')renderRegras();
+  if(id==='admin'){renderAdminJogos();renderAdminPartic();renderAdminResult();}
+}
 
+function showAdminTab(tab,btn){
+  ['jogos','partic','result','bonus','especiais','grupos','config','exportar','cobertura','cobertura-geral'].forEach(function(t){
+    D('atab-'+t).style.display=t===tab?'':'none';
+  });
+  document.querySelectorAll('.tab-btn').forEach(function(b){b.classList.remove('active');});
+  btn.classList.add('active');
+  if(tab==='jogos')renderAdminJogos();
+  if(tab==='partic')renderAdminPartic();
+  if(tab==='result')renderAdminResult();
+  if(tab==='bonus')renderAdminBonus();
+  if(tab==='especiais')renderAdminEsp();
+  if(tab==='grupos')renderAdminGrupos();
+  if(tab==='config')renderAdminConfig();
+  if(tab==='cobertura')renderCobertura();
+  if(tab==='cobertura-geral')renderCoberturaGeral();
+}
 
+</script>
+</body>
+</html>
