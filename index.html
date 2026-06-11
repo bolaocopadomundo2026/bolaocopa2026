@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Bolão Copa do Mundo 2026</title>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;900&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
 :root{--green:#00C878;--green-dark:#00A060;--green-dim:#003D25;--gold:#FFD700;--bg:#0A0F0D;--bg2:#111810;--bg3:#182018;--surface:#1C2620;--border:rgba(0,200,120,0.15);--text:#E8F5EE;--muted:#6B8C78;--danger:#FF5A5A;--amber:#FFB347}
@@ -329,7 +329,7 @@ const ESPS=[
   {key:'artilheiro',label:'Artilheiro',pts:250},
   {key:'luva',label:'Luva de Ouro',pts:250}
 ];
-const sb=supabase.createClient(SURL,SKEY);
+var sb;
 let user=null,admin=false;
 let jogos=[],parts=[],apostas=[],especiais=[],grupos=[];
 let prazos={especiais:null,grupos:null};
