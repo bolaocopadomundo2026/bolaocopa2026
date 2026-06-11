@@ -633,7 +633,7 @@ async function renderGrupos(){
   var pid=user.id;
   var myGrp={};
   grupos.filter(function(g){return g.participante_id===pid;}).forEach(function(g){
-    myGrp[g.grupo+'-'+g.posicao]=g;
+    myGrp[g.grupo+'-'+Number(g.posicao)]=g;
   });
   var fechado=prazos.grupos&&!prazoOk(prazos.grupos);
   var prazoTxt=prazos.grupos?new Date(prazos.grupos).toLocaleString('pt-BR'):'sem prazo definido';
@@ -643,7 +643,7 @@ async function renderGrupos(){
   GRUPOS.forEach(function(gr){
     html+='<div class="grupo-card"><div class="grupo-title">Grupo '+gr+'</div>';
     [1,2,3,4].forEach(function(pos){
-      var k=gr+'-'+pos;var g=myGrp[k]||{};
+      var k=gr+'-'+Number(pos);var g=myGrp[k]||{};
       html+='<div class="grupo-pos-row">';
       html+='<span class="grupo-pos-label">'+pos+'º lugar</span>';
       html+='<input type="text" placeholder="Seleção" value="'+(g.selecao||'')+'" id="grp'+gr+''+pos+'"'+(fechado?' disabled':'')+' >';
@@ -690,7 +690,7 @@ async function salvarTodosGrupos(){
   GRUPOS.forEach(function(gr){
     [1,2,3,4].forEach(function(pos){
       if(!vals[gr][pos])return;
-      var idx=grupos.findIndex(function(g){return g.participante_id===user.id&&g.grupo===gr&&g.posicao===pos;});
+      var idx=grupos.findIndex(function(g){return g.participante_id===user.id&&g.grupo===gr&&Number(g.posicao)===Number(pos);});
       if(idx>=0){grupos[idx].selecao=vals[gr][pos];}
       else{grupos.push({participante_id:user.id,grupo:gr,posicao:pos,selecao:vals[gr][pos],correto:false});}
       var badge=D('grp-badge-'+gr+'-'+pos);
@@ -723,7 +723,7 @@ async function salvarGrp(gr){
   // Atualiza array local e campos na tela
   [1,2,3,4].forEach(function(pos){
     if(!vals[pos])return;
-    var idx=grupos.findIndex(function(g){return g.participante_id===user.id&&g.grupo===gr&&g.posicao===pos;});
+    var idx=grupos.findIndex(function(g){return g.participante_id===user.id&&g.grupo===gr&&Number(g.posicao)===Number(pos);});
     if(idx>=0){grupos[idx].selecao=vals[pos];}
     else{grupos.push({participante_id:user.id,grupo:gr,posicao:pos,selecao:vals[pos],correto:false});}
     var el=D('grp'+gr+''+pos);
@@ -815,7 +815,7 @@ async function renderPont(){
       html+='<div style="background:var(--bg3);border-radius:8px;padding:.625rem">';
       html+='<div style="font-size:12px;font-weight:600;color:var(--green);margin-bottom:4px">Grupo '+gr+'</div>';
       [1,2,3,4].forEach(function(pos){
-        var g=pGr.find(x=>x.posicao===pos);
+        var g=pGr.find(function(x){return Number(x.posicao)===Number(pos);});
         html+='<div style="font-size:12px;padding:2px 0;display:flex;justify-content:space-between;gap:4px;align-items:center">';
         html+='<span style="color:var(--muted);flex-shrink:0">'+pos+'º</span>';
         html+='<span style="flex:1;padding:0 4px">'+(g&&g.selecao?g.selecao:'—')+'</span>';
