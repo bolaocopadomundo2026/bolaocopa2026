@@ -329,11 +329,11 @@ async function renderRanking(){
   var maxPts=Math.max(1,...parts.map(p=>getPts(p.id)));
   var totalRes=jogos.filter(j=>j.gols_a!==null&&j.gols_a!==undefined).length;
   D('mets').innerHTML='<div class="metric"><div class="mv">'+parts.length+'</div><div class="ml">Participantes</div></div><div class="metric"><div class="mv">'+jogos.length+'</div><div class="ml">Jogos</div></div><div class="metric"><div class="mv">'+totalRes+'</div><div class="ml">Resultados</div></div><div class="metric"><div class="mv">'+apostas.length+'</div><div class="ml">Apostas</div></div>';
-  var medals=['1','2','3','4','5','6','7','8','9','10'];
+  var medals=sorted.map((_,i)=>String(i+1)+'o');
   var pc=i=>i===0?'p1':i===1?'p2':i===2?'p3':'';
   D('rlist').innerHTML=sorted.map((p,i)=>{
     var pts=getPts(p.id),cr=cravadas(p.id),pct=Math.round(pts/maxPts*100);
-    return '<div class="ri"><div class="rp '+pc(i)+'">'+medals[i]+'</div><div class="rav">'+initials(p.nome)+'</div><div style="flex:1"><div class="rname">'+p.nome+'</div><div class="rsub">'+cr+' cravada'+(cr!==1?'s':'')+'</div></div><div class="rbar"><div class="rbarv" style="width:'+pct+'%"></div></div><div class="rpts">'+pts+' pts</div></div>';
+    return '<div class="ri"><div class="rp '+pc(i)+'">'+(i+1)+'</div><div class="rav">'+initials(p.nome)+'</div><div style="flex:1"><div class="rname">'+p.nome+'</div><div class="rsub">'+cr+' cravada'+(cr!==1?'s':'')+'</div></div><div class="rbar"><div class="rbarv" style="width:'+pct+'%"></div></div><div class="rpts">'+pts+' pts</div></div>';
   }).join('');
 }
 
