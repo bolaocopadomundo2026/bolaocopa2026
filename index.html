@@ -382,16 +382,12 @@ async function start(){
 }
 
 async function fetchAllGrupos(){
-  var all=[];
-  var from=0;
-  var batchSize=1000;
-  while(true){
-    var res=await sb.from('palpites_grupos').select('id,participante_id,grupo,posicao,selecao,correto').range(from,from+batchSize-1);
-    if(res.error||!res.data||res.data.length===0)break;
-    all=all.concat(res.data);
-    if(res.data.length<batchSize)break;
-    from+=batchSize;
-  }
+  // Busca em 2 lotes paralelos de 1000 (cobre ate 2000 registros)
+  var res=await Promise.all([
+    sb.from('palpites_grupos').select('id,participante_id,grupo,posicao,selecao,correto').range(0,999),
+    sb.from('palpites_grupos').select('id,participante_id,grupo,posicao,selecao,correto').range(1000,1999)
+  ]);
+  var all=(res[0].data||[]).concat(res[1].data||[]);
   return all;
 }
 
@@ -407,8 +403,6 @@ async function load(){
   if(user&&!['__guest__','__admin__'].includes(String(user.id))){
     var gRes=await sb.from('palpites_grupos').select('id,participante_id,grupo,posicao,selecao,correto').eq('participante_id',user.id);
     grupos=gRes.data||[];
-  } else {
-    grupos=[];
   }
 }
 
