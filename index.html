@@ -131,6 +131,7 @@ tr:last-child td{border-bottom:none}
       <button class="nav-btn" id="nav-apostas" onclick="showPage('apostas',this)">Minhas Apostas</button>
       <button class="nav-btn" onclick="showPage('bonus-pub',this)">Perguntas-Bônus</button>
       <button class="nav-btn" id="nav-especiais" onclick="showPage('especiais',this)">Apostas Especiais</button>
+      <button class="nav-btn" id="nav-grupos" onclick="showPage('grupos',this)">Apostas Grupos</button>
       <button class="nav-btn" id="nav-pont" onclick="showPage('pont',this)">Meus Pontos</button>
       <button class="nav-btn" onclick="showPage('regras',this)">Regras</button>
       <button class="nav-btn" id="nav-admin" style="display:none" onclick="showPage('admin',this)">Admin</button>
@@ -163,6 +164,9 @@ tr:last-child td{border-bottom:none}
     <div id="page-especiais" class="page">
       <div class="section-head">Apostas Especiais</div>
       <div id="especiais-content"></div>
+    </div>
+    <div id="page-grupos" class="page">
+      <div class="section-head">Apostas Grupos</div>
       <div id="grupos-content"></div>
     </div>
     <div id="page-pont" class="page">
@@ -372,7 +376,7 @@ async function start(){
   D('user-display').textContent=user.nome;
   D('nav-admin').style.display=admin?'':'none';
   const g=user.id==='__guest__';
-  ['nav-apostas','nav-especiais','nav-pont'].forEach(id=>D(id).style.display=g?'none':'');
+  ['nav-apostas','nav-especiais','nav-grupos','nav-pont'].forEach(id=>D(id).style.display=g?'none':'');
   show('app');await load();await loadPrazos();renderRanking();
 }
 
@@ -629,40 +633,74 @@ async function salvarEsp(key){
 }
 
 async function renderGrupos(){
-  await load();await loadPrazos();
-  var pid=user.id;
-  var myGrp={};
-  grupos.filter(function(g){return g.participante_id===pid;}).forEach(function(g){
-    myGrp[g.grupo+'-'+Number(g.posicao)]=g;
-  });
-  var fechado=prazos.grupos&&!prazoOk(prazos.grupos);
-  var prazoTxt=prazos.grupos?new Date(prazos.grupos).toLocaleString('pt-BR'):'sem prazo definido';
-  var html='<div class="'+(fechado?'warn-bar':'info-bar')+'">'+(fechado?'Prazo encerrado em: ':'Prazo: ')+prazoTxt+' — 50pts por acerto de seleção + posição.</div>';
-  if(!fechado) html+='<button class="btn primary" style="width:100%;margin-bottom:1rem;padding:10px" onclick="salvarTodosGrupos()">💾 Salvar todos os grupos de uma vez</button>';
-  html+='<div class="grupos-grid">';
-  GRUPOS.forEach(function(gr){
-    html+='<div class="grupo-card"><div class="grupo-title">Grupo '+gr+'</div>';
-    [1,2,3,4].forEach(function(pos){
-      var k=gr+'-'+Number(pos);var g=myGrp[k]||{};
-      html+='<div class="grupo-pos-row">';
-      html+='<span class="grupo-pos-label">'+pos+'º lugar</span>';
-      html+='<input type="text" placeholder="Seleção" value="'+(g.selecao||'')+'" id="grp'+gr+''+pos+'"'+(fechado?' disabled':'')+' >';
-      html+='<span id="grp-badge-'+gr+'-'+pos+'">';
-      if(g.correto) html+='<span class="pts-badge" style="flex-shrink:0">✓ Correto</span>';
-      else if(g.selecao) html+='<span style="flex-shrink:0;font-size:11px;padding:2px 6px;border-radius:10px;background:var(--bg3);color:var(--muted)">pendente</span>';
-      html+='</span>';
-      html+='</div>';
-    });
-    if(!fechado){
-      html+='<button class="btn primary sm" style="margin-top:6px;width:100%" onclick="salvarGrp(\''+gr+'\')">Salvar '+gr+'</button>';
-    }else{
-      html+='<div style="font-size:11px;color:var(--danger);margin-top:4px">Prazo encerrado</div>';
+  await load();
+  await loadPrazos();
+  var pid = user.id;
+  var fechado = prazos.grupos && !prazoOk(prazos.grupos);
+  var prazoTxt = prazos.grupos ? toBSB(prazos.grupos) : 'sem prazo definido';
+
+  // Build lookup with string keys
+  var myGrp = {};
+  grupos.forEach(function(g){
+    if(String(g.participante_id) === String(pid)){
+      myGrp[String(g.grupo) + '-' + String(g.posicao)] = g;
     }
-    html+='</div>';
   });
-  html+='</div>';
-  D('grupos-content').innerHTML=html;
+
+  var html = '<div class="' + (fechado ? 'warn-bar' : 'info-bar') + '">' + (fechado ? 'Prazo encerrado em: ' : 'Prazo: ') + prazoTxt + ' — 50pts por acerto de selecao + posicao.</div>';
+  html += '<div class="grupos-grid">';
+
+  GRUPOS.forEach(function(gr){
+    html += '<div class="grupo-card">';
+    html += '<div class="grupo-title">Grupo ' + gr + '</div>';
+    [1,2,3,4].forEach(function(pos){
+      var chave = String(gr) + '-' + String(pos);
+      var g = myGrp[chave] || {};
+      var val = g.selecao || '';
+      html += '<div class="grupo-pos-row">';
+      html += '<span class="grupo-pos-label">' + pos + 'o lugar</span>';
+      html += '<input type="text" placeholder="Selecao" value="' + val + '" id="grpinput-' + gr + '-' + pos + '"' + (fechado ? ' disabled' : '') + '>';
+      if(g.correto){
+        html += '<span style="flex-shrink:0;font-size:11px;padding:2px 6px;border-radius:10px;background:var(--green-dim);color:var(--green);font-weight:600">OK</span>';
+      } else if(val){
+        html += '<span id="grpbadge-' + gr + '-' + pos + '" style="flex-shrink:0;font-size:11px;padding:2px 6px;border-radius:10px;background:var(--bg3);color:var(--muted)">pendente</span>';
+      } else {
+        html += '<span id="grpbadge-' + gr + '-' + pos + '"></span>';
+      }
+      if(!fechado){
+        html += '<button class="btn sm" style="flex-shrink:0;padding:3px 8px;font-size:11px" data-gr="' + gr + '" data-pos="' + pos + '" onclick="salvarUmGrp(this.dataset.gr,this.dataset.pos)">OK</button>';
+      }
+      html += '</div>';
+    });
+    html += '</div>';
+  });
+
+  html += '</div>';
+  D('grupos-content').innerHTML = html;
 }
+
+async function salvarUmGrp(gr, pos){
+  var el = D('grpinput-' + gr + '-' + pos);
+  if(!el){ toast('Erro: campo nao encontrado.'); return; }
+  var val = el.value.trim();
+  if(!val){ toast('Digite uma selecao primeiro.'); return; }
+  var result = await sb.from('palpites_grupos').upsert(
+    {participante_id: user.id, grupo: gr, posicao: Number(pos), selecao: val},
+    {onConflict: 'participante_id,grupo,posicao'}
+  );
+  if(result.error){ toast('Erro: ' + result.error.message); return; }
+  // Atualiza array local
+  var idx = grupos.findIndex(function(g){
+    return String(g.participante_id) === String(user.id) && String(g.grupo) === String(gr) && Number(g.posicao) === Number(pos);
+  });
+  if(idx >= 0){ grupos[idx].selecao = val; }
+  else { grupos.push({participante_id: user.id, grupo: gr, posicao: Number(pos), selecao: val, correto: false}); }
+  // Atualiza badge sem re-renderizar
+  var badge = D('grpbadge-' + gr + '-' + pos);
+  if(badge){ badge.textContent = 'pendente'; badge.style.cssText = 'flex-shrink:0;font-size:11px;padding:2px 6px;border-radius:10px;background:var(--bg3);color:var(--muted)'; }
+  toast('Salvo!');
+}
+
 
 async function salvarTodosGrupos(){
   var ops=[];
@@ -1436,7 +1474,8 @@ function showPage(id,btn){
   if(id==='ranking')renderRanking();
   if(id==='jogos')renderJogos();
   if(id==='apostas')renderApostas();
-  if(id==='especiais'){renderEspeciais();renderGrupos();}
+  if(id==='especiais')renderEspeciais();
+  if(id==='grupos')renderGrupos();
   if(id==='pont')renderPont();
   if(id==='bonus-pub')renderBonusPub();
   if(id==='regras')renderRegras();
