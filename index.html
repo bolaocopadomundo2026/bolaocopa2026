@@ -326,6 +326,7 @@ const sb=supabase.createClient(SURL,SKEY);
 let user=null,admin=false;
 let jogos=[],parts=[],apostas=[],especiais=[],grupos=[];
 let prazos={especiais:null,grupos:null};
+let todosGruposAdmin=[];
 
 function D(id){return document.getElementById(id);}
 function toBSB(iso){if(!iso)return '—';var d=new Date(iso);var bsb=new Date(d.getTime()-3*60*60*1000);var pad=function(n){return n<10?'0'+n:String(n);};return pad(bsb.getUTCDate())+'/'+pad(bsb.getUTCMonth()+1)+'/'+bsb.getUTCFullYear()+' '+pad(bsb.getUTCHours())+':'+pad(bsb.getUTCMinutes());}
@@ -403,11 +404,11 @@ async function load(){
   ]);
   jogos=j.data||[];parts=p.data||[];apostas=a.data||[];especiais=e.data||[];
   // grupos carregado separadamente por participante
-  if(!['__guest__','__admin__'].includes(String(user&&user.id))){
+  if(user&&!['__guest__','__admin__'].includes(String(user.id))){
     var gRes=await sb.from('palpites_grupos').select('id,participante_id,grupo,posicao,selecao,correto').eq('participante_id',user.id);
     grupos=gRes.data||[];
   } else {
-    grupos=await fetchAllGrupos();
+    grupos=[];
   }
 }
 
@@ -1154,11 +1155,14 @@ async function togEsp(eid,correto){
 
 async function renderAdminGrupos(){
   await load();
-  // Busca todos os grupos diretamente sem limite
-  var todosGrupos=await fetchAllGrupos();
+  todosGruposAdmin=await fetchAllGrupos();
+  renderAdminGruposComDados(todosGruposAdmin);
+}
+
+function renderAdminGruposComDados(todosGrupos){
   var html='';
   GRUPOS.forEach(function(gr){
-    var pGr=grupos.filter(g=>g.grupo===gr);
+    var pGr=todosGrupos.filter(function(g){return g.grupo===gr;});
     html+='<div class="game-card">';
     html+='<div style="font-family:\'Barlow Condensed\',sans-serif;font-size:18px;font-weight:700;color:var(--green);margin-bottom:.75rem">Grupo '+gr+'</div>';
     [1,2,3,4].forEach(function(pos){
@@ -1183,7 +1187,15 @@ async function renderAdminGrupos(){
 async function togGrp(gid,correto){
   var {error}=await sb.from('palpites_grupos').update({correto}).eq('id',gid);
   if(error){toast('Erro: '+error.message);return;}
-  toast(correto?'+50 pts!':'Removido.');await load();renderAdminGrupos();renderRanking();
+  // Atualiza array local
+  var idx=todosGruposAdmin.findIndex(function(g){return g.id===gid;});
+  if(idx>=0)todosGruposAdmin[idx].correto=correto;
+  // Atualiza grupos tb para getPts funcionar
+  var idx2=grupos.findIndex(function(g){return g.id===gid;});
+  if(idx2>=0)grupos[idx2].correto=correto;
+  toast(correto?'+50 pts!':'Removido.');
+  renderAdminGruposComDados(todosGruposAdmin);
+  await load();renderRanking();
 }
 
 async function renderCobertura(){
