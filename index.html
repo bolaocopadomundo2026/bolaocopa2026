@@ -101,8 +101,8 @@ tr:last-child td{border-bottom:none}
 .grupos-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px}
 .grupo-card{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:.875rem}
 .grupo-title{font-family:'Barlow Condensed',sans-serif;font-size:17px;font-weight:700;color:var(--green);margin-bottom:.5rem}
-.grupo-pos-row{display:flex;align-items:center;gap:8px;margin-bottom:5px}
-.grupo-pos-label{font-size:11px;color:var(--muted);width:52px;flex-shrink:0}
+.grupo-pos-row{display:flex;align-items:center;gap:6px;margin-bottom:5px}
+.grupo-pos-label{font-size:11px;color:var(--muted);width:48px;flex-shrink:0}
 @media(max-width:600px){.game-teams{gap:3px}.team-name{font-size:11px}.score-box{width:36px}.rank-bar-wrap{display:none}.esp-grid{grid-template-columns:1fr}.grupos-grid{grid-template-columns:1fr 1fr}}
 </style>
 </head>
@@ -659,7 +659,7 @@ async function renderGrupos(){
       var val = g.selecao || '';
       html += '<div class="grupo-pos-row">';
       html += '<span class="grupo-pos-label">' + pos + 'o lugar</span>';
-      html += '<input type="text" placeholder="Selecao" value="' + val + '" id="grpinput-' + gr + '-' + pos + '"' + (fechado ? ' disabled' : '') + '>';
+      html += '<input type="text" placeholder="Selecao" value="' + val + '" id="grpinput-' + gr + '-' + pos + '" style="flex:1;min-width:0"' + (fechado ? ' disabled' : '') + '>';
       if(g.correto){
         html += '<span style="flex-shrink:0;font-size:11px;padding:2px 6px;border-radius:10px;background:var(--green-dim);color:var(--green);font-weight:600">OK</span>';
       } else if(val){
