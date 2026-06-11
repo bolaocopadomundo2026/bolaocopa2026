@@ -267,9 +267,10 @@ function getPts(pid){
   var tot=0;
   apostas.filter(a=>a.participante_id===pid).forEach(a=>{
     var j=jogos.find(x=>x.id===a.jogo_id);
+    // Bônus conta sempre que marcado, independente do resultado
+    if(a.bonus_correto)tot+=20;
     if(!j||j.gols_a===null||j.gols_a===undefined)return;
     tot+=calcPts(a.gols_a,a.gols_b,j.gols_a,j.gols_b,j.dobro);
-    if(a.bonus_correto)tot+=20;
   });
   especiais.filter(e=>e.participante_id===pid&&e.correto).forEach(e=>{
     var d=ESPS.find(x=>x.key===e.categoria);if(d)tot+=d.pts;
@@ -341,8 +342,12 @@ async function renderJogos(){
   await load();
   var fase=D('jfase').value,jg=jogos.filter(j=>j.fase===fase&&j.ativo),html='';
   if(!jg.length){D('jarea').innerHTML='<div style="color:var(--muted)">Nenhum jogo lancado nessa fase.</div>';return;}
+  // Sem resultado primeiro, com resultado por último
+  var jgSemRes=jg.filter(j=>j.gols_a===null||j.gols_a===undefined);
+  var jgComRes=jg.filter(j=>j.gols_a!==null&&j.gols_a!==undefined);
+  var jgOrd=jgSemRes.concat(jgComRes);
   var divOk=false;
-  jg.forEach(j=>{
+  jgOrd.forEach(j=>{
     var fechado=!prazoOk(j.prazo),resDisp=j.gols_a!==null&&j.gols_a!==undefined;
     var apJ=apostas.filter(a=>a.jogo_id===j.id);
     if(resDisp&&!divOk){divOk=true;html+='<div class="div"><div class="divl"></div><span class="divt">Jogos finalizados</span><div class="divl"></div></div>';}
