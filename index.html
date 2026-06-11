@@ -381,14 +381,21 @@ async function start(){
 }
 
 async function load(){
-  const [j,p,a,e,g]=await Promise.all([
+  const [j,p,a,e]=await Promise.all([
     sb.from('jogos').select('*').order('id'),
     sb.from('participantes').select('id,nome').order('nome'),
     sb.from('apostas').select('*').limit(10000),
-    sb.from('especiais').select('*'),
-    sb.from('palpites_grupos').select('id,participante_id,grupo,posicao,selecao,correto').limit(5000)
+    sb.from('especiais').select('*')
   ]);
-  jogos=j.data||[];parts=p.data||[];apostas=a.data||[];especiais=e.data||[];grupos=g.data||[];
+  jogos=j.data||[];parts=p.data||[];apostas=a.data||[];especiais=e.data||[];
+  // grupos carregado separadamente por participante
+  if(!['__guest__','__admin__'].includes(String(user&&user.id))){
+    var gRes=await sb.from('palpites_grupos').select('id,participante_id,grupo,posicao,selecao,correto').eq('participante_id',user.id);
+    grupos=gRes.data||[];
+  } else {
+    var gAll=await sb.from('palpites_grupos').select('id,participante_id,grupo,posicao,selecao,correto').limit(5000);
+    grupos=gAll.data||[];
+  }
 }
 
 async function loadPrazos(){
