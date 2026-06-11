@@ -640,8 +640,10 @@ async function salvarEsp(key){
 }
 
 async function renderGrupos(){
-  await load();
   await loadPrazos();
+  // Busca grupos DIRETAMENTE do banco filtrado por participante
+  var gRes=await sb.from('palpites_grupos').select('id,participante_id,grupo,posicao,selecao,correto').eq('participante_id',user.id);
+  grupos=grupos.filter(function(g){return g.participante_id!==user.id;}).concat(gRes.data||[]);
   var pid = user.id;
   var fechado = prazos.grupos && !prazoOk(prazos.grupos);
   var prazoTxt = prazos.grupos ? toBSB(prazos.grupos) : 'sem prazo definido';
@@ -1168,6 +1170,312 @@ async function togGrp(gid,correto){
   if(error){toast('Erro: '+error.message);return;}
   toast(correto?'+50 pts!':'Removido.');await load();renderAdminGrupos();renderRanking();
 }
+
+async function renderCobertura(){
+  await load();
+  var jgOrd=jogos.slice().sort(function(a,b){return a.id-b.id;});
+  var partsOrd=parts.slice().sort(function(a,b){return a.nome.localeCompare(b.nome);});
+  if(!jgOrd.length||!partsOrd.length){
+    D('cobertura-area').innerHTML='<div style="color:var(--muted)">Nenhum jogo ou participante cadastrado.</div>';return;
+  }
+  var apMap={};
+  partsOrd.forEach(function(p){apMap[p.id]={};});
+  apostas.forEach(function(a){
+    if(apMap[a.participante_id]&&a.gols_a!==null&&a.gols_a!==undefined){
+      apMap[a.participante_id][a.jogo_id]=true;
+    }
+  });
+  var html='<table style="font-size:11px;min-width:600px">';
+  html+='<thead><tr>';
+  html+='<th style="position:sticky;left:0;background:var(--surface);z-index:1;min-width:120px;text-align:left;padding:6px 8px">Participante</th>';
+  jgOrd.forEach(function(j){
+    var temRes=j.gols_a!==null&&j.gols_a!==undefined;
+    html+='<th style="text-align:center;padding:4px 4px;color:'+(temRes?'var(--green)':'var(--muted)')+'">'+j.id+'</th>';
+  });
+  html+='<th style="text-align:center;padding:4px 8px;color:var(--amber)">Total</th>';
+  html+='</tr></thead><tbody>';
+  partsOrd.forEach(function(p){
+    var total=jgOrd.filter(function(j){return apMap[p.id][j.id];}).length;
+    html+='<tr>';
+    html+='<td style="position:sticky;left:0;background:var(--bg3);z-index:1;padding:5px 8px;font-weight:500;white-space:nowrap">'+p.nome+'</td>';
+    jgOrd.forEach(function(j){
+      var ok=apMap[p.id][j.id];
+      var temRes=j.gols_a!==null&&j.gols_a!==undefined;
+      html+='<td style="text-align:center;padding:3px 4px;background:'+(temRes?'rgba(0,200,120,0.05)':'')+'">'+( ok?'✅':'')+'</td>';
+    });
+    html+='<td style="text-align:center;padding:4px 8px;font-weight:600;color:var(--amber)">'+total+'/'+jgOrd.length+'</td>';
+    html+='</tr>';
+  });
+  html+='</tbody></table>';
+  D('cobertura-area').innerHTML=html;
+}
+
+async function renderAdminConfig(){
+  var {data}=await sb.from('regras').select('conteudo,prazo_especiais,prazo_grupos').eq('id',1).single();
+  if(!data)return;
+  D('regras-editor').value=data.conteudo||'';
+  if(data.prazo_especiais){
+    var dpe2=new Date(data.prazo_especiais);var bpe=new Date(dpe2.getTime()-3*60*60*1000);
+    var padx=function(n){return n<10?'0'+n:String(n);};
+    D('prazo-especiais').value=bpe.getUTCFullYear()+'-'+padx(bpe.getUTCMonth()+1)+'-'+padx(bpe.getUTCDate())+'T'+padx(bpe.getUTCHours())+':'+padx(bpe.getUTCMinutes());
+  }
+  if(data.prazo_grupos){
+    var dpg2=new Date(data.prazo_grupos);var bpg=new Date(dpg2.getTime()-3*60*60*1000);
+    var pady=function(n){return n<10?'0'+n:String(n);};
+    D('prazo-grupos').value=bpg.getUTCFullYear()+'-'+pady(bpg.getUTCMonth()+1)+'-'+pady(bpg.getUTCDate())+'T'+pady(bpg.getUTCHours())+':'+pady(bpg.getUTCMinutes());
+  }
+}
+
+async function salvarPrazos(){
+  var pe=D('prazo-especiais').value;var pg=D('prazo-grupos').value;
+  var pe2=null,pg2=null;
+  if(pe){var dpe=new Date(pe);dpe.setTime(dpe.getTime()+3*60*60*1000);pe2=dpe.toISOString();}
+  if(pg){var dpg=new Date(pg);dpg.setTime(dpg.getTime()+3*60*60*1000);pg2=dpg.toISOString();}
+  var {error}=await sb.from('regras').upsert({id:1,prazo_especiais:pe2,prazo_grupos:pg2},{onConflict:'id'});
+  if(error){toast('Erro: '+error.message);return;}
+  toast('Prazos salvos!');prazos={especiais:pe2,grupos:pg2};
+}
+
+async function salvarRegras(){
+  var c=D('regras-editor').value;
+  var {error}=await sb.from('regras').upsert({id:1,conteudo:c},{onConflict:'id'});
+  if(error){toast('Erro: '+error.message);return;}
+  toast('Regras salvas!');
+}
+
+async function exportarExcel(){
+  D('export-status').textContent='Gerando Excel...';
+  await load();
+
+  var wb=XLSX.utils.book_new();
+  var sorted=parts.slice().sort(function(a,b){
+    var d=getPts(b.id)-getPts(a.id);
+    return d!==0?d:cravadas(b.id)-cravadas(a.id);
+  });
+
+  // Estilo helpers
+  function hdr(v){return {v:v,t:'s',s:{font:{bold:true,color:{rgb:'FFFFFF'}},fill:{fgColor:{rgb:'1A3C2E'}},alignment:{horizontal:'center'}}};}
+  function hdrGold(v){return {v:v,t:'s',s:{font:{bold:true,color:{rgb:'FFFFFF'}},fill:{fgColor:{rgb:'7A5700'}},alignment:{horizontal:'center'}}};}
+  function cell(v,bold,color){var s={alignment:{horizontal:'center'}};if(bold)s.font={bold:true};if(color)s.font=Object.assign(s.font||{},{color:{rgb:color}});return {v:v,t:'s',s:s};}
+  function num(v,bold,color){var s={alignment:{horizontal:'center'}};if(bold)s.font={bold:true};if(color)s.font=Object.assign(s.font||{},{color:{rgb:color}});return {v:v,t:'n',s:s};}
+
+  // ===== ABA 1: RANKING =====
+  var rankRows=[[hdr('Posição'),hdr('Participante'),hdr('Total de Pontos'),hdr('Pts Placares'),hdr('Pts Bônus'),hdr('Pts Especiais'),hdr('Pts Grupos'),hdr('Placares Cravados')]];
+  sorted.forEach(function(p,i){
+    var ptsPlacar=0,ptsBonus=0;
+    apostas.filter(a=>a.participante_id===p.id).forEach(function(a){
+      var j=jogos.find(x=>x.id===a.jogo_id);
+      if(!j||j.gols_a===null||j.gols_a===undefined)return;
+      ptsPlacar+=calcPts(a.gols_a,a.gols_b,j.gols_a,j.gols_b,j.dobro);
+      if(a.bonus_correto)ptsBonus+=20;
+    });
+    var ptsEsp=0;
+    especiais.filter(e=>e.participante_id===p.id&&e.correto).forEach(function(e){
+      var def=ESPS.find(d=>d.key===e.categoria);if(def)ptsEsp+=def.pts;
+    });
+    var ptsGrp=grupos.filter(g=>g.participante_id===p.id&&g.correto).length*50;
+    var total=ptsPlacar+ptsBonus+ptsEsp+ptsGrp;
+    rankRows.push([
+      num(i+1,true),cell(p.nome,true),num(total,true,'1D9E75'),
+      num(ptsPlacar),num(ptsBonus,'','FFB347'),num(ptsEsp,'','FFD700'),num(ptsGrp),num(cravadas(p.id))
+    ]);
+  });
+  var wsRank=XLSX.utils.aoa_to_sheet(rankRows);
+  wsRank['!cols']=[{wch:8},{wch:25},{wch:15},{wch:14},{wch:12},{wch:14},{wch:12},{wch:16}];
+  XLSX.utils.book_append_sheet(wb,wsRank,'Ranking');
+
+  // ===== ABA 2: APOSTAS DE PLACARES =====
+  var apRows=[[
+    hdr('Participante'),hdr('Jogo'),hdr('Time A'),hdr('Time B'),hdr('Fase'),
+    hdr('Placar A'),hdr('Placar B'),hdr('Result A'),hdr('Result B'),
+    hdr('Pts Placar'),hdr('Dobro?'),hdrGold('Pergunta Bônus'),hdrGold('Resposta'),hdrGold('Pts Bônus')
+  ]];
+  sorted.forEach(function(p){
+    apostas.filter(a=>a.participante_id===p.id).sort(function(a,b){return a.jogo_id-b.jogo_id;}).forEach(function(a){
+      var j=jogos.find(x=>x.id===a.jogo_id)||{};
+      var ok=j.gols_a!==null&&j.gols_a!==undefined;
+      var pts=ok?calcPts(a.gols_a,a.gols_b,j.gols_a,j.gols_b,j.dobro):'-';
+      var crav=ok&&Number(a.gols_a)===Number(j.gols_a)&&Number(a.gols_b)===Number(j.gols_b);
+      apRows.push([
+        cell(p.nome),num(j.id||0),cell(j.time_a||''),cell(j.time_b||''),cell(j.fase||''),
+        a.gols_a!==null?num(a.gols_a):cell('-'),
+        a.gols_b!==null?num(a.gols_b):cell('-'),
+        ok?num(j.gols_a):cell('-'),ok?num(j.gols_b):cell('-'),
+        typeof pts==='number'?num(pts,crav,crav?'FFD700':'1D9E75'):cell('-'),
+        cell(j.dobro?'Sim':'Não'),
+        cell(j.pergunta_bonus||''),
+        cell(a.resposta_bonus||''),
+        cell(a.bonus_correto?'20':'-','',a.bonus_correto?'FFB347':'')
+      ]);
+    });
+  });
+  var wsAp=XLSX.utils.aoa_to_sheet(apRows);
+  wsAp['!cols']=[{wch:22},{wch:6},{wch:18},{wch:18},{wch:10},{wch:8},{wch:8},{wch:8},{wch:8},{wch:10},{wch:7},{wch:28},{wch:22},{wch:9}];
+  XLSX.utils.book_append_sheet(wb,wsAp,'Apostas de Placares');
+
+  // ===== ABA 3: ESPECIAIS =====
+  var espRows=[[hdr('Participante'),hdr('Categoria'),hdr('Pontos'),hdr('Palpite'),hdr('Correto?'),hdr('Pts Ganhos')]];
+  sorted.forEach(function(p){
+    ESPS.forEach(function(def){
+      var e=especiais.find(x=>x.participante_id===p.id&&x.categoria===def.key);
+      espRows.push([
+        cell(p.nome),cell(def.label),num(def.pts),
+        cell(e?e.resposta||'':'— sem palpite'),
+        cell(e&&e.correto?'Sim':'Não','',e&&e.correto?'1D9E75':'FF5A5A'),
+        e&&e.correto?num(def.pts,true,'1D9E75'):num(0)
+      ]);
+    });
+  });
+  var wsEsp=XLSX.utils.aoa_to_sheet(espRows);
+  wsEsp['!cols']=[{wch:22},{wch:18},{wch:8},{wch:25},{wch:9},{wch:10}];
+  XLSX.utils.book_append_sheet(wb,wsEsp,'Especiais');
+
+  // ===== ABA 4: GRUPOS =====
+  var grpRows=[[hdr('Participante'),hdr('Grupo'),hdr('Posição'),hdr('Seleção apostada'),hdr('Correto?'),hdr('Pts Ganhos')]];
+  sorted.forEach(function(p){
+    GRUPOS.forEach(function(gr){
+      [1,2,3,4].forEach(function(pos){
+        var g=grupos.find(x=>x.participante_id===p.id&&x.grupo===gr&&x.posicao===pos);
+        grpRows.push([
+          cell(p.nome),cell(gr),num(pos),
+          cell(g?g.selecao||'':'— sem palpite'),
+          cell(g&&g.correto?'Sim':'Não','',g&&g.correto?'1D9E75':'FF5A5A'),
+          g&&g.correto?num(50,true,'1D9E75'):num(0)
+        ]);
+      });
+    });
+  });
+  var wsGrp=XLSX.utils.aoa_to_sheet(grpRows);
+  wsGrp['!cols']=[{wch:22},{wch:7},{wch:8},{wch:22},{wch:9},{wch:10}];
+  XLSX.utils.book_append_sheet(wb,wsGrp,'Grupos');
+
+  // ===== ABA 5: RESUMO =====
+  var resRows=[[
+    hdr('Participante'),hdr('Total Geral'),hdr('Pts Placares'),hdr('Pts Bônus Perguntas'),
+    hdr('Pts Especiais'),hdr('Pts Grupos'),hdr('Placares Cravados'),
+    hdr('Apostas Feitas'),hdr('Jogos Totais')
+  ]];
+  sorted.forEach(function(p){
+    var ptsPlacar=0,ptsBonus=0;
+    var apFeitas=0;
+    apostas.filter(a=>a.participante_id===p.id).forEach(function(a){
+      var j=jogos.find(x=>x.id===a.jogo_id);
+      if(a.gols_a!==null&&a.gols_a!==undefined)apFeitas++;
+      if(!j||j.gols_a===null||j.gols_a===undefined)return;
+      ptsPlacar+=calcPts(a.gols_a,a.gols_b,j.gols_a,j.gols_b,j.dobro);
+      if(a.bonus_correto)ptsBonus+=20;
+    });
+    var ptsEsp=0;
+    especiais.filter(e=>e.participante_id===p.id&&e.correto).forEach(function(e){
+      var def=ESPS.find(d=>d.key===e.categoria);if(def)ptsEsp+=def.pts;
+    });
+    var ptsGrp=grupos.filter(g=>g.participante_id===p.id&&g.correto).length*50;
+    var total=ptsPlacar+ptsBonus+ptsEsp+ptsGrp;
+    resRows.push([
+      cell(p.nome,true),num(total,true,'1D9E75'),num(ptsPlacar),
+      num(ptsBonus,'','FFB347'),num(ptsEsp,'','FFD700'),num(ptsGrp),
+      num(cravadas(p.id)),num(apFeitas),num(jogos.length)
+    ]);
+  });
+  var wsRes=XLSX.utils.aoa_to_sheet(resRows);
+  wsRes['!cols']=[{wch:22},{wch:13},{wch:13},{wch:20},{wch:14},{wch:12},{wch:17},{wch:14},{wch:13}];
+  XLSX.utils.book_append_sheet(wb,wsRes,'Resumo');
+
+  // Gerar e baixar
+  var wbout=XLSX.write(wb,{bookType:'xlsx',type:'array'});
+  var blob=new Blob([wbout],{type:'application/octet-stream'});
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement('a');
+  a.href=url;a.download='bolao2026_'+new Date().toISOString().slice(0,10)+'.xlsx';
+  document.body.appendChild(a);a.click();document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  D('export-status').textContent='Pronto! Arquivo Excel gerado com 5 abas.';
+}
+
+
+async function renderCoberturaGeral(){
+  await load();
+  // Busca TODOS os grupos sem limite
+  var gAll=await sb.from('palpites_grupos').select('id,participante_id,grupo,posicao,selecao,correto').limit(10000);
+  var todosGrupos=gAll.data||[];
+
+  var partsOrd=parts.slice().sort(function(a,b){return a.nome.localeCompare(b.nome);});
+  if(!partsOrd.length){D('cobertura-geral-area').innerHTML='<div style="color:var(--muted)">Nenhum participante.</div>';return;}
+
+  // Lookup especiais
+  var espMap={};
+  partsOrd.forEach(function(p){espMap[p.id]={};});
+  especiais.forEach(function(e){if(espMap[e.participante_id]&&e.resposta)espMap[e.participante_id][e.categoria]=true;});
+
+  // Lookup grupos com todos os dados
+  var grpMap={};
+  partsOrd.forEach(function(p){grpMap[p.id]={};});
+  todosGrupos.forEach(function(g){
+    if(grpMap[g.participante_id]&&g.selecao){
+      grpMap[g.participante_id][String(g.grupo)+'-'+String(g.posicao)]=true;
+    }
+  });
+
+  var espCols=[
+    {key:'campeao',col:'C'},{key:'vice',col:'VC'},{key:'terceiro',col:'3C'},
+    {key:'quarto',col:'4C'},{key:'artilheiro',col:'A'},{key:'luva',col:'L'}
+  ];
+  var GRUPS=['A','B','C','D','E','F','G','H','I','J','K','L'];
+
+  var html='<table style="font-size:11px;min-width:600px">';
+  html+='<thead><tr>';
+  html+='<th style="position:sticky;left:0;background:var(--surface);z-index:1;min-width:130px;text-align:left;padding:6px 8px">Participante</th>';
+  espCols.forEach(function(e){
+    html+='<th style="text-align:center;padding:4px 5px;color:var(--gold)">'+e.col+'</th>';
+  });
+  html+='<th style="padding:4px 4px;background:var(--bg3);color:var(--muted);font-size:10px">|</th>';
+  GRUPS.forEach(function(gr){
+    html+='<th colspan="4" style="text-align:center;padding:4px 4px;color:var(--green);border-left:1px solid var(--border)">'+gr+'</th>';
+  });
+  html+='<th style="text-align:center;padding:4px 6px;color:var(--gold)">Esp</th>';
+  html+='<th style="text-align:center;padding:4px 6px;color:var(--green)">Grp</th>';
+  html+='</tr>';
+  html+='<tr>';
+  html+='<th style="position:sticky;left:0;background:var(--surface);z-index:1"></th>';
+  espCols.forEach(function(){html+='<th></th>';});
+  html+='<th style="background:var(--bg3)"></th>';
+  GRUPS.forEach(function(){
+    [1,2,3,4].forEach(function(pos){
+      html+='<th style="text-align:center;padding:2px 3px;color:var(--muted);font-size:10px;'+(pos===1?'border-left:1px solid var(--border)':'')+'">'+pos+'</th>';
+    });
+  });
+  html+='<th></th><th></th>';
+  html+='</tr></thead><tbody>';
+
+  partsOrd.forEach(function(p){
+    var totalEsp=espCols.filter(function(e){return espMap[p.id][e.key];}).length;
+    var totalGrp=0;
+    GRUPS.forEach(function(gr){
+      [1,2,3,4].forEach(function(pos){
+        if(grpMap[p.id][String(gr)+'-'+String(pos)])totalGrp++;
+      });
+    });
+    html+='<tr>';
+    html+='<td style="position:sticky;left:0;background:var(--bg3);z-index:1;padding:5px 8px;font-weight:500;white-space:nowrap">'+p.nome+'</td>';
+    espCols.forEach(function(e){
+      html+='<td style="text-align:center;padding:3px 5px">'+(espMap[p.id][e.key]?'✅':'')+'</td>';
+    });
+    html+='<td style="background:var(--bg3)"></td>';
+    GRUPS.forEach(function(gr){
+      [1,2,3,4].forEach(function(pos){
+        var ok=grpMap[p.id][String(gr)+'-'+String(pos)];
+        html+='<td style="text-align:center;padding:3px 3px;'+(pos===1?'border-left:1px solid var(--border)':'')+'">'+( ok?'✅':'')+'</td>';
+      });
+    });
+    html+='<td style="text-align:center;padding:4px 6px;font-weight:600;color:var(--gold)">'+totalEsp+'/6</td>';
+    html+='<td style="text-align:center;padding:4px 6px;font-weight:600;color:var(--green)">'+totalGrp+'/48</td>';
+    html+='</tr>';
+  });
+
+  html+='</tbody></table>';
+  D('cobertura-geral-area').innerHTML=html;
+}
+
 
 async function renderCobertura(){
   await load();
