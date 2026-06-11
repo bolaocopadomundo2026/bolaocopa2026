@@ -380,6 +380,20 @@ async function start(){
   show('app');await load();await loadPrazos();renderRanking();
 }
 
+async function fetchAllGrupos(){
+  var all=[];
+  var from=0;
+  var batchSize=1000;
+  while(true){
+    var res=await sb.from('palpites_grupos').select('id,participante_id,grupo,posicao,selecao,correto').range(from,from+batchSize-1);
+    if(res.error||!res.data||res.data.length===0)break;
+    all=all.concat(res.data);
+    if(res.data.length<batchSize)break;
+    from+=batchSize;
+  }
+  return all;
+}
+
 async function load(){
   const [j,p,a,e]=await Promise.all([
     sb.from('jogos').select('*').order('id'),
@@ -393,8 +407,7 @@ async function load(){
     var gRes=await sb.from('palpites_grupos').select('id,participante_id,grupo,posicao,selecao,correto').eq('participante_id',user.id);
     grupos=gRes.data||[];
   } else {
-    var gAll=await sb.from('palpites_grupos').select('id,participante_id,grupo,posicao,selecao,correto').limit(5000);
-    grupos=gAll.data||[];
+    grupos=await fetchAllGrupos();
   }
 }
 
@@ -1142,8 +1155,7 @@ async function togEsp(eid,correto){
 async function renderAdminGrupos(){
   await load();
   // Busca todos os grupos diretamente sem limite
-  var gAll=await sb.from('palpites_grupos').select('id,participante_id,grupo,posicao,selecao,correto').limit(10000);
-  var todosGrupos=gAll.data||[];
+  var todosGrupos=await fetchAllGrupos();
   var html='';
   GRUPOS.forEach(function(gr){
     var pGr=grupos.filter(g=>g.grupo===gr);
@@ -1399,8 +1411,7 @@ async function exportarExcel(){
 async function renderCoberturaGeral(){
   await load();
   // Busca TODOS os grupos sem limite
-  var gAll=await sb.from('palpites_grupos').select('id,participante_id,grupo,posicao,selecao,correto').limit(10000);
-  var todosGrupos=gAll.data||[];
+  var todosGrupos=await fetchAllGrupos();
 
   var partsOrd=parts.slice().sort(function(a,b){return a.nome.localeCompare(b.nome);});
   if(!partsOrd.length){D('cobertura-geral-area').innerHTML='<div style="color:var(--muted)">Nenhum participante.</div>';return;}
