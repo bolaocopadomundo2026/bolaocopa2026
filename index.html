@@ -1141,6 +1141,9 @@ async function togEsp(eid,correto){
 
 async function renderAdminGrupos(){
   await load();
+  // Busca todos os grupos diretamente sem limite
+  var gAll=await sb.from('palpites_grupos').select('id,participante_id,grupo,posicao,selecao,correto').limit(10000);
+  var todosGrupos=gAll.data||[];
   var html='';
   GRUPOS.forEach(function(gr){
     var pGr=grupos.filter(g=>g.grupo===gr);
