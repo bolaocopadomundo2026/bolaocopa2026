@@ -661,28 +661,35 @@ async function renderGrupos(){
 }
 
 async function salvarGrp(gr){
-  var ops=[];
+  // Captura os valores ANTES de qualquer operação async
+  var vals={};
   [1,2,3,4].forEach(function(pos){
     var el=D('grp'+gr+''+pos);
-    var val=el?el.value.trim():null;
-    ops.push(sb.from('palpites_grupos').upsert({participante_id:user.id,grupo:gr,posicao:pos,selecao:val||null},{onConflict:'participante_id,grupo,posicao'}));
+    vals[pos]=el?el.value.trim():null;
+  });
+  var ops=[];
+  [1,2,3,4].forEach(function(pos){
+    ops.push(sb.from('palpites_grupos').upsert({participante_id:user.id,grupo:gr,posicao:pos,selecao:vals[pos]||null},{onConflict:'participante_id,grupo,posicao'}));
   });
   var res=await Promise.all(ops);
-  var erros=res.filter(r=>r.error);if(erros.length){toast('Erro: '+erros[0].error.message);return;}
-  toast('Grupo '+gr+' salvo!');
-  await load();
-  // Atualiza só os badges sem apagar os campos
-  var pid=user.id;
-  var myGrp={};grupos.filter(g=>g.participante_id===pid).forEach(g=>{myGrp[g.grupo+'-'+g.posicao]=g;});
+  var erros=res.filter(r=>r.error);
+  if(erros.length){toast('Erro: '+erros[0].error.message);return;}
+  // Atualiza array local sem chamar load() para não interferir nos outros campos
   [1,2,3,4].forEach(function(pos){
-    var g=myGrp[gr+'-'+pos];
-    var badgeId='grp-badge-'+gr+'-'+pos;
-    var badge=D(badgeId);
+    var idx=grupos.findIndex(g=>g.participante_id===user.id&&g.grupo===gr&&g.posicao===pos);
+    if(idx>=0){grupos[idx].selecao=vals[pos]||null;}
+    else{grupos.push({participante_id:user.id,grupo:gr,posicao:pos,selecao:vals[pos]||null,correto:false});}
+    // Restaura o valor no campo (garante que não foi apagado)
+    var el=D('grp'+gr+''+pos);
+    if(el&&vals[pos])el.value=vals[pos];
+    // Atualiza badge
+    var badge=D('grp-badge-'+gr+'-'+pos);
     if(badge){
-      if(g&&g.correto) badge.innerHTML='<span style="flex-shrink:0;font-size:11px;padding:2px 6px;border-radius:10px;background:var(--green-dim);color:var(--green);font-weight:600">✓ Correto</span>';
-      else if(g&&g.selecao) badge.innerHTML='<span style="flex-shrink:0;font-size:11px;padding:2px 6px;border-radius:10px;background:var(--bg3);color:var(--muted)">pendente</span>';
+      if(vals[pos]) badge.innerHTML='<span style="flex-shrink:0;font-size:11px;padding:2px 6px;border-radius:10px;background:var(--bg3);color:var(--muted)">pendente</span>';
+      else badge.innerHTML='';
     }
   });
+  toast('✅ Grupo '+gr+' salvo!');
 }
 
 async function renderPont(){
