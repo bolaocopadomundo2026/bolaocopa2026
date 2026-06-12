@@ -512,7 +512,11 @@ async function renderPont(){
       var win=(x,y)=>Number(x)>Number(y)?'A':Number(x)<Number(y)?'B':'E',acertou=win(a.gols_a,a.gols_b)===win(j.gols_a,j.gols_b);
       var st,col;
       if(crav){st='🎯 Cravou!';col='var(--gold)';}else if(pts===25||(j.dobro&&pts===50)){st='✅ Vencedor+1 placar';col='var(--green)';}else if(pts>0&&acertou){st='👍 Acertou vencedor';col='#5DCAA5';}else{st='❌ Errou';col='var(--danger)';}
-      html+='<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--border);flex-wrap:wrap"><span style="font-size:11px;color:var(--muted);width:50px">Jogo '+j.id+'</span><span style="flex:1;font-size:12px">'+j.time_a+' '+a.gols_a+'x'+a.gols_b+' '+j.time_b+'</span><span style="font-size:12px;color:var(--muted)">Real: '+j.gols_a+'x'+j.gols_b+'</span>'+(j.dobro?'<span class="db">🔥2x</span>':'')+' <span style="font-size:12px;color:'+col+'">'+st+'</span><span class="pb" style="'+(pts===0?'background:var(--bg3);color:var(--muted)':'')+'">'+( pts>0?'+':'')+pts+' pts</span>'+(a.bonus_correto?'<span class="pb">+20 bonus</span>':'')+'</div>';
+      var bonusRow='';
+      if(j.pergunta_bonus&&a.resposta_bonus){
+        bonusRow='<div style="font-size:11px;color:var(--muted);margin-top:2px;padding-left:58px">Bônus: <span style="color:var(--text)">'+a.resposta_bonus+'</span>'+(j.resposta_bonus_publica?' → Oficial: <span style="color:'+(a.bonus_correto?'var(--green)':'var(--danger)')+'">'+j.resposta_bonus_publica+'</span>'+(a.bonus_correto?' ✓':' ✗'):'')+'</div>';
+      }
+      html+='<div style="padding:7px 0;border-bottom:1px solid var(--border)"><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span style="font-size:11px;color:var(--muted);width:50px">Jogo '+j.id+'</span><span style="flex:1;font-size:12px">'+j.time_a+' '+a.gols_a+'x'+a.gols_b+' '+j.time_b+'</span><span style="font-size:12px;color:var(--muted)">Real: '+j.gols_a+'x'+j.gols_b+'</span>'+(j.dobro?'<span class="db">🔥2x</span>':'')+' <span style="font-size:12px;color:'+col+'">'+st+'</span><span class="pb" style="'+(pts===0?'background:var(--bg3);color:var(--muted)':'')+'">'+( pts>0?'+':'')+pts+' pts</span>'+(a.bonus_correto?'<span class="pb">+20 bonus</span>':'')+'</div>'+bonusRow+'</div>';
     });
     html+='</div>';
   }
