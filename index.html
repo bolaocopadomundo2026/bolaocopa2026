@@ -502,7 +502,7 @@ async function renderPont(){
   await load();
   var pid=user.id,total=getPts(pid),cr=cravadas(pid);
   var html='<div class="card" style="text-align:center;margin-bottom:1rem"><div style="font-family:\'Barlow Condensed\',sans-serif;font-size:48px;font-weight:900;color:var(--green)">'+total+'</div><div style="font-size:14px;color:var(--muted)">pontos totais</div><div style="font-size:13px;color:var(--amber);margin-top:4px">'+cr+' placar'+(cr!==1?'es':'')+' cravado'+(cr!==1?'s':'')+'</div></div>';
-  var apRes=apostas.filter(a=>{if(a.participante_id!==pid)return false;var j=jogos.find(x=>x.id===a.jogo_id);return j&&j.gols_a!==null&&j.gols_a!==undefined;});
+  var apRes=apostas.filter(a=>{if(a.participante_id!==pid)return false;var j=jogos.find(x=>x.id===a.jogo_id);return j&&j.gols_a!==null&&j.gols_a!==undefined;}).sort((a,b)=>a.jogo_id-b.jogo_id);
   if(apRes.length){
     var ptJ=0;apRes.forEach(a=>{var j=jogos.find(x=>x.id===a.jogo_id);ptJ+=calcPts(a.gols_a,a.gols_b,j.gols_a,j.gols_b,j.dobro);if(a.bonus_correto)ptJ+=20;});
     html+='<div class="card"><div style="font-size:14px;font-weight:500;margin-bottom:.75rem">Resultados dos jogos <span style="color:var(--green)">'+ptJ+' pts</span></div>';
