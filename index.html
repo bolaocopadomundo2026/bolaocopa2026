@@ -356,9 +356,13 @@ async function renderJogos(){
       bets=apJ.map(a=>{
         var pt=parts.find(p=>p.id===a.participante_id),pts=resDisp?calcPts(a.gols_a,a.gols_b,j.gols_a,j.gols_b,j.dobro):null;
         var isMe=user&&a.participante_id===user.id;
-        var pontuou=pts!==null&&pts>0;
-        var borda=pontuou?'border-color:var(--green);box-shadow:0 0 0 1px var(--green);':(isMe?'border-color:var(--green);':'');
-        if(j.dobro&&pontuou)borda='border-color:var(--amber);box-shadow:0 0 0 1px var(--amber);';
+        var borda='';
+        if(pts!==null&&pts>0){
+          var base=j.dobro?'2px':'1px';
+          if(pts===40||pts===80) borda='border:'+base+' solid #FFD700;box-shadow:0 0 0 '+base+' #FFD700;';
+          else if(pts===25||pts===50) borda='border:'+base+' solid var(--green);box-shadow:0 0 0 '+base+' var(--green);';
+          else if(pts===10||pts===20) borda='border:'+base+' solid #5DCAA5;box-shadow:0 0 0 '+base+' #5DCAA5;';
+        }
         return '<span class="bc" style="'+borda+'">'+(pt?pt.nome.split(' ')[0]:'?')+' '+(a.gols_a!==null?a.gols_a:'?')+'x'+(a.gols_b!==null?a.gols_b:'?')+(pts!==null?' +'+pts+'pts':'')+(a.bonus_correto?' *':'')+'</span>';
       }).join('')||'<span style="color:var(--muted);font-size:12px">Sem apostas</span>';
     }else{bets='<span style="color:var(--muted);font-size:12px">Apostas visiveis apos o prazo</span>';}
