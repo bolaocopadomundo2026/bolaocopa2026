@@ -438,6 +438,34 @@ async function renderEspeciais(){
       '</div>';
   });
   html+='</div>';
+  // Tabela de todos os palpites (só após prazo encerrado)
+  if(fechado){
+    var partsOrd=parts.slice().sort((a,b)=>a.nome.localeCompare(b.nome));
+    var espMap={};
+    especiais.forEach(e=>{
+      if(!espMap[e.participante_id])espMap[e.participante_id]={};
+      espMap[e.participante_id][e.categoria]=e.resposta;
+    });
+    html+='<div class="card" style="margin-top:1rem">';
+    html+='<div style="font-size:14px;font-weight:500;margin-bottom:.75rem">Palpites de todos os participantes</div>';
+    html+='<div style="overflow-x:auto"><table style="font-size:12px;width:100%">';
+    html+='<thead><tr><th style="text-align:left;padding:6px 8px;color:var(--muted);white-space:nowrap">Participante</th>';
+    ESPS.forEach(def=>{html+='<th style="text-align:center;padding:6px 8px;color:var(--muted);white-space:nowrap">'+def.label+'</th>';});
+    html+='</tr></thead><tbody>';
+    partsOrd.forEach(p=>{
+      var isMe=p.id===user.id;
+      html+='<tr style="'+(isMe?'background:rgba(0,200,120,0.07)':'')+'">';
+      html+='<td style="padding:6px 8px;font-weight:'+(isMe?'600':'400')+';white-space:nowrap">'+p.nome+(isMe?' 👤':'')+'</td>';
+      ESPS.forEach(def=>{
+        var resp=espMap[p.id]?espMap[p.id][def.key]:'';
+        var esp=especiais.find(e=>e.participante_id===p.id&&e.categoria===def.key);
+        var cor=esp&&esp.correto?'color:var(--green);font-weight:600':'color:var(--text)';
+        html+='<td style="text-align:center;padding:6px 8px;'+cor+'">'+(resp||'—')+(esp&&esp.correto?' ✓':'')+'</td>';
+      });
+      html+='</tr>';
+    });
+    html+='</tbody></table></div></div>';
+  }
   D('esparea').innerHTML=html;
 }
 
