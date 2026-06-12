@@ -979,9 +979,9 @@ async function renderCuriosidades(){
     });
     tendencia.sort(function(a,b){return b.total-a.total;});
     var top3Alta=tendencia.slice(0,3).filter(function(p){return p.total>0;});
-    var top3Baixa=tendencia.slice(-3).reverse().filter(function(p){return p.total===0;});
+    var top3Baixa=tendencia.slice(-3).reverse();
     if(top3Alta.length)html+=statRow('📈','Em alta (últimos '+ultimos3.length+' jogos)',top3Alta.map(function(p){return p.nome+' ('+p.total+'pts)';}).join(', '));
-    if(top3Baixa.length)html+=statRow('📉','Em baixa (últimos '+ultimos3.length+' jogos)',top3Baixa.map(function(p){return p.nome;}).join(', '));
+    if(top3Baixa.length)html+=statRow('📉','Em baixa (últimos '+ultimos3.length+' jogos)',top3Baixa.map(function(p){return p.nome+' ('+p.total+'pts)';}).join(', '));
   }
 
   // Apostador mais unico
