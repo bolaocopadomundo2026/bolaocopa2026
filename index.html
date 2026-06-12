@@ -641,8 +641,12 @@ async function saveResult(jid){
 }
 
 async function renderAdmBonus(){
-  await load();var fase=D('bfase').value,jg=jogos.filter(j=>j.fase===fase&&j.pergunta_bonus);
-  if(!jg.length){D('barea').innerHTML='<div style="color:var(--muted)">Nenhum jogo com bonus nessa fase.</div>';return;}
+  await load();var fase=D('bfase').value,jgAll=jogos.filter(j=>j.fase===fase&&j.pergunta_bonus);
+  if(!jgAll.length){D('barea').innerHTML='<div style="color:var(--muted)">Nenhum jogo com bonus nessa fase.</div>';return;}
+  // Sem resultado publicado primeiro, com resultado por último
+  var jgSem=jgAll.filter(j=>!j.resposta_bonus_publica);
+  var jgCom=jgAll.filter(j=>j.resposta_bonus_publica);
+  var jg=jgSem.concat(jgCom);
   var html='';
   jg.forEach(j=>{
     var apJ=apostas.filter(a=>a.jogo_id===j.id&&a.resposta_bonus).sort((a,b)=>{var pa=parts.find(p=>p.id===a.participante_id),pb=parts.find(p=>p.id===b.participante_id);return (pa?pa.nome:'').localeCompare(pb?pb.nome:'');});
