@@ -127,6 +127,7 @@ tr:last-child td{border-bottom:none}
       <button class="nb" onclick="pg('bonuspub',this)">Perguntas-Bonus</button>
       <button class="nb" id="nesp" onclick="pg('especiais',this)">Apostas Especiais</button>
       <button class="nb" id="ngrp" onclick="pg('grupos',this)">Apostas Grupos</button>
+      <button class="nb" onclick="pg('curiosidades',this)">Curiosidades</button>
       <button class="nb" onclick="pg('regras',this)">Regras</button>
       <button class="nb" id="nadm" style="display:none" onclick="pg('admin',this)">Admin</button>
     </nav></div>
@@ -143,6 +144,7 @@ tr:last-child td{border-bottom:none}
     <div id="pg-grupos" class="page"><div class="sh">Apostas Grupos</div><div id="grparea"></div></div>
     <div id="pg-pont" class="page"><div class="sh">Meus Pontos</div><div id="pontarea"></div></div>
     <div id="pg-bonuspub" class="page"><div class="sh">Perguntas-Bonus</div><div class="ib">Perguntas encerradas com respostas dos participantes.</div><div id="bparea"></div></div>
+    <div id="pg-curiosidades" class="page"><div class="sh">Curiosidades</div><div id="curarea"></div></div>
     <div id="pg-regras" class="page"><div class="sh">Regras e Pontuacao</div><div class="card"><div class="rc" id="regrastext">Carregando...</div></div></div>
     <div id="pg-admin" class="page"><div class="sh">Painel Admin</div>
       <div class="tbrow">
@@ -329,7 +331,7 @@ async function renderRanking(){
   var sorted=parts.slice().sort((a,b)=>{var d=getPts(b.id)-getPts(a.id);return d!==0?d:cravadas(b.id)-cravadas(a.id);});
   var maxPts=Math.max(1,...parts.map(p=>getPts(p.id)));
   var totalRes=jogos.filter(j=>j.gols_a!==null&&j.gols_a!==undefined).length;
-  D('mets').innerHTML='<div class="metric"><div class="mv">'+parts.length+'</div><div class="ml">Participantes</div></div><div class="metric"><div class="mv">'+jogos.length+'</div><div class="ml">Jogos</div></div><div class="metric"><div class="mv">'+totalRes+'</div><div class="ml">Resultados</div></div><div class="metric"><div class="mv">'+apostas.length+'</div><div class="ml">Apostas</div></div>';
+  D('mets').innerHTML='<div class="metric"><div class="mv">'+parts.length+'</div><div class="ml">Participantes</div></div><div class="metric"><div class="mv">'+jogos.length+'</div><div class="ml">Jogos</div></div><div class="metric"><div class="mv">'+totalRes+'</div><div class="ml">Resultados</div></div>';
   var medals=sorted.map((_,i)=>String(i+1)+'o');
   var pc=i=>i===0?'p1':i===1?'p2':i===2?'p3':'';
   D('rlist').innerHTML=sorted.map((p,i)=>{
@@ -887,6 +889,88 @@ function toggleGrpAcc(id){
   else{el.style.display='none';if(icon)icon.textContent='▶';}
 }
 
+async function renderCuriosidades(){
+  await load();
+  var html='';
+
+  // Total de apostas
+  html+='<div class="card"><div style="font-size:13px;color:var(--muted);margin-bottom:1rem;text-transform:uppercase;letter-spacing:.5px;font-weight:600">📊 Sobre o Bolão</div>';
+  html+='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px">';
+  html+='<div class="metric"><div class="mv">'+apostas.length+'</div><div class="ml">Apostas feitas</div></div>';
+
+  // Total de cravadas
+  var totalCrav=0;
+  apostas.forEach(a=>{
+    var j=jogos.find(x=>x.id===a.jogo_id);
+    if(j&&j.gols_a!==null&&j.gols_a!==undefined&&Number(a.gols_a)===Number(j.gols_a)&&Number(a.gols_b)===Number(j.gols_b))totalCrav++;
+  });
+  html+='<div class="metric"><div class="mv">'+totalCrav+'</div><div class="ml">Cravadas no bolão</div></div>';
+  html+='</div></div>';
+
+  // Quem mais cravou
+  var jogosComRes=jogos.filter(j=>j.gols_a!==null&&j.gols_a!==undefined);
+  html+='<div class="card"><div style="font-size:13px;color:var(--muted);margin-bottom:1rem;text-transform:uppercase;letter-spacing:.5px;font-weight:600">👑 Destaques</div>';
+
+  var cravMap={};parts.forEach(p=>{cravMap[p.id]=0;});
+  apostas.forEach(a=>{
+    var j=jogos.find(x=>x.id===a.jogo_id);
+    if(j&&j.gols_a!==null&&j.gols_a!==undefined&&Number(a.gols_a)===Number(j.gols_a)&&Number(a.gols_b)===Number(j.gols_b))cravMap[a.participante_id]=(cravMap[a.participante_id]||0)+1;
+  });
+  var maxCrav=Math.max(...Object.values(cravMap));
+  var maissCrav=parts.filter(p=>cravMap[p.id]===maxCrav).map(p=>p.nome.split(' ')[0]).join(', ');
+  html+='<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)">';
+  html+='<span style="font-size:24px">🎯</span><div><div style="font-size:13px;font-weight:600">Quem mais cravou</div>';
+  html+='<div style="font-size:13px;color:var(--green)">'+maissCrav+' — '+maxCrav+' cravada'+(maxCrav!==1?'s':'')+'</div></div></div>';
+
+  // Mais consistente
+  var jogosComResIds=jogosComRes.map(j=>j.id);
+  var consMap={};
+  parts.forEach(p=>{
+    var apPart=apostas.filter(a=>a.participante_id===p.id&&jogosComResIds.includes(a.jogo_id));
+    var pontuou=apPart.filter(a=>{
+      var j=jogos.find(x=>x.id===a.jogo_id);
+      return j&&calcPts(a.gols_a,a.gols_b,j.gols_a,j.gols_b,j.dobro)>0;
+    }).length;
+    consMap[p.id]=apPart.length>0?Math.round(pontuou/apPart.length*100):0;
+  });
+  var maxCons=Math.max(...Object.values(consMap));
+  var maisCons=parts.filter(p=>consMap[p.id]===maxCons&&consMap[p.id]>0).map(p=>p.nome.split(' ')[0]).join(', ');
+  html+='<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)">';
+  html+='<span style="font-size:24px">💪</span><div><div style="font-size:13px;font-weight:600">Mais consistente</div>';
+  html+='<div style="font-size:13px;color:var(--green)">'+maisCons+' — '+maxCons+'% dos jogos pontuados</div></div></div>';
+
+  // Placar mais apostado
+  var placMap={};
+  apostas.forEach(a=>{
+    if(a.gols_a===null||a.gols_a===undefined)return;
+    var k=a.gols_a+'x'+a.gols_b;
+    placMap[k]=(placMap[k]||0)+1;
+  });
+  var maxPlac=Math.max(...Object.values(placMap));
+  var maisPlac=Object.entries(placMap).filter(([k,v])=>v===maxPlac).map(([k])=>k).join(', ');
+  html+='<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)">';
+  html+='<span style="font-size:24px">⚽</span><div><div style="font-size:13px;font-weight:600">Placar mais apostado</div>';
+  html+='<div style="font-size:13px;color:var(--green)">'+maisPlac+' — '+maxPlac+' apostas</div></div></div>';
+
+  // Jogo com mais palpites iguais
+  var jogoIgual=null,maxIgual=0;
+  jogos.forEach(j=>{
+    var apJ=apostas.filter(a=>a.jogo_id===j.id&&a.gols_a!==null);
+    var igMap={};
+    apJ.forEach(a=>{var k=a.gols_a+'x'+a.gols_b;igMap[k]=(igMap[k]||0)+1;});
+    var maxIg=Math.max(...Object.values(igMap||{0:0}));
+    if(maxIg>maxIgual){maxIgual=maxIg;jogoIgual={j,placar:Object.entries(igMap).find(([k,v])=>v===maxIg)[0]};}
+  });
+  if(jogoIgual){
+    html+='<div style="display:flex;align-items:center;gap:12px;padding:10px 0">';
+    html+='<span style="font-size:24px">🤝</span><div><div style="font-size:13px;font-weight:600">Jogo com mais palpites iguais</div>';
+    html+='<div style="font-size:13px;color:var(--green)">Jogo '+jogoIgual.j.id+' ('+jogoIgual.j.time_a+' x '+jogoIgual.j.time_b+') — '+maxIgual+' apostaram '+jogoIgual.placar+'</div></div></div>';
+  }
+  html+='</div>';
+
+  D('curarea').innerHTML=html;
+}
+
 function pg(id,btn){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('on'));
   document.querySelectorAll('.nb').forEach(b=>b.classList.remove('on'));
@@ -899,6 +983,7 @@ function pg(id,btn){
   if(id==='pont')renderPont();
   if(id==='bonuspub')renderBonusPub();
   if(id==='regras')renderRegras();
+  if(id==='curiosidades')renderCuriosidades();
   if(id==='admin'){renderAdmJogos();renderAdmPartic();renderResult();}
 }
 
