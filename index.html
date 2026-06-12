@@ -967,21 +967,21 @@ async function renderCuriosidades(){
   var maisSeq=parts.filter(function(p){return seqMap[p.id]===maxSeq&&maxSeq>0;}).map(function(p){return p.nome;}).join(', ');
   if(maxSeq>0)html+=statRow('🔥','Maior sequência pontuando',maisSeq+' — '+maxSeq+' jogo'+(maxSeq!==1?'s'+'seguidos':''));
 
-  // Tendencia atual (ultimos 3 jogos com resultado)
-  var ultimos3=jogosComRes.slice().sort(function(a,b){return b.id-a.id;}).slice(0,3).map(function(j){return j.id;});
+  // Tendencia atual - top 3 que mais pontuou e menos pontuou nos ultimos 3 jogos
+  var ultimos3=jogosComRes.slice().sort(function(a,b){return b.id-a.id;}).slice(0,3);
   if(ultimos3.length>=2){
-    var subindo=[];var caindo=[];
-    parts.forEach(function(p){
-      var ptsPor=ultimos3.map(function(jid){
-        var a=apostas.find(function(x){return x.participante_id===p.id&&x.jogo_id===jid;});
-        var j=jogos.find(function(x){return x.id===jid;});
-        return a&&j?calcPts(a.gols_a,a.gols_b,j.gols_a,j.gols_b,j.dobro):0;
-      });
-      if(ptsPor[0]>ptsPor[ptsPor.length-1])subindo.push(p.nome);
-      else if(ptsPor[0]<ptsPor[ptsPor.length-1])caindo.push(p.nome);
+    var tendencia=parts.map(function(p){
+      var total=ultimos3.reduce(function(sum,j){
+        var a=apostas.find(function(x){return x.participante_id===p.id&&x.jogo_id===j.id;});
+        return sum+(a?calcPts(a.gols_a,a.gols_b,j.gols_a,j.gols_b,j.dobro):0);
+      },0);
+      return {nome:p.nome,total:total};
     });
-    if(subindo.length)html+=statRow('📈','Em alta (últimos jogos)',subindo.slice(0,3).join(', ')+(subindo.length>3?' +mais':''));
-    if(caindo.length)html+=statRow('📉','Em baixa (últimos jogos)',caindo.slice(0,3).join(', ')+(caindo.length>3?' +mais':''));
+    tendencia.sort(function(a,b){return b.total-a.total;});
+    var top3Alta=tendencia.slice(0,3).filter(function(p){return p.total>0;});
+    var top3Baixa=tendencia.slice(-3).reverse().filter(function(p){return p.total===0;});
+    if(top3Alta.length)html+=statRow('📈','Em alta (últimos '+ultimos3.length+' jogos)',top3Alta.map(function(p){return p.nome+' ('+p.total+'pts)';}).join(', '));
+    if(top3Baixa.length)html+=statRow('📉','Em baixa (últimos '+ultimos3.length+' jogos)',top3Baixa.map(function(p){return p.nome;}).join(', '));
   }
 
   // Apostador mais unico
