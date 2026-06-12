@@ -123,10 +123,10 @@ tr:last-child td{border-bottom:none}
       <button class="nb on" onclick="pg('ranking',this)">Ranking</button>
       <button class="nb" onclick="pg('jogos',this)">Placares</button>
       <button class="nb" id="nap" onclick="pg('apostas',this)">Minhas Apostas</button>
+      <button class="nb" onclick="pg('bonuspub',this)">Perguntas-Bonus</button>
       <button class="nb" id="nesp" onclick="pg('especiais',this)">Apostas Especiais</button>
       <button class="nb" id="ngrp" onclick="pg('grupos',this)">Apostas Grupos</button>
       <button class="nb" id="npont" onclick="pg('pont',this)">Meus Pontos</button>
-      <button class="nb" onclick="pg('bonuspub',this)">Perguntas-Bonus</button>
       <button class="nb" onclick="pg('regras',this)">Regras</button>
       <button class="nb" id="nadm" style="display:none" onclick="pg('admin',this)">Admin</button>
     </nav></div>
@@ -373,8 +373,11 @@ async function renderApostas(){
   var fase=D('afase').value,jg=jogos.filter(j=>j.fase===fase&&j.ativo);
   if(!jg.length){D('aarea').innerHTML='<div style="color:var(--muted)">Nenhum jogo lancado nessa fase.</div>';return;}
   var myAp={};apostas.filter(a=>a.participante_id===user.id).forEach(a=>{myAp[a.jogo_id]=a;});
+  var jgSemRes=jg.filter(j=>j.gols_a===null||j.gols_a===undefined);
+  var jgComRes=jg.filter(j=>j.gols_a!==null&&j.gols_a!==undefined);
+  var jgOrd=jgSemRes.concat(jgComRes);
   var divOk=false,html='';
-  jg.forEach(j=>{
+  jgOrd.forEach(j=>{
     var ap=myAp[j.id]||{},fechado=!prazoOk(j.prazo),resDisp=j.gols_a!==null&&j.gols_a!==undefined;
     var pts=resDisp?calcPts(ap.gols_a,ap.gols_b,j.gols_a,j.gols_b,j.dobro):null;
     var feita=ap.gols_a!==undefined&&ap.gols_a!==null;
