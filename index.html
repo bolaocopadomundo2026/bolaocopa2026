@@ -361,7 +361,7 @@ async function renderJogos(){
           var base=j.dobro?'2px':'1px';
           if(pts===40||pts===80) borda='border:'+base+' solid #00C878;box-shadow:0 0 0 '+base+' #00C878;';
           else if(pts===25||pts===50) borda='border:'+base+' solid #FFD700;box-shadow:0 0 0 '+base+' #FFD700;';
-          else if(pts===10||pts===20) borda='border:'+base+' solid #FFFFFF;box-shadow:0 0 0 '+base+' #FFFFFF;';
+          else if(pts===10||pts===20) borda='border:'+base+' solid #FF5A5A;box-shadow:0 0 0 '+base+' #FF5A5A;';
         }
         return '<span class="bc" style="'+borda+'">'+(pt?pt.nome.split(' ')[0]:'?')+' '+(a.gols_a!==null?a.gols_a:'?')+'x'+(a.gols_b!==null?a.gols_b:'?')+(pts!==null?' +'+pts+'pts':'')+(a.bonus_correto?' *':'')+'</span>';
       }).join('')||'<span style="color:var(--muted);font-size:12px">Sem apostas</span>';
@@ -561,10 +561,26 @@ async function saveAllGrps(){
   toast('✅ Todos os grupos salvos!');
 }
 
-async function renderPont(){
+async function renderPont(viewPid){
   await load();
-  var pid=user.id,total=getPts(pid),cr=cravadas(pid);
-  var html='<div class="card" style="text-align:center;margin-bottom:1rem"><div style="font-family:\'Barlow Condensed\',sans-serif;font-size:48px;font-weight:900;color:var(--green)">'+total+'</div><div style="font-size:14px;color:var(--muted)">pontos totais</div><div style="font-size:13px;color:var(--amber);margin-top:4px">'+cr+' placar'+(cr!==1?'es':'')+' cravado'+(cr!==1?'s':'')+'</div></div>';
+  var pid=viewPid||user.id;
+  var isMe=pid===user.id;
+  var total=getPts(pid),cr=cravadas(pid);
+  var viewPart=parts.find(p=>p.id===pid)||{nome:'?'};
+  var html='';
+  // Seletor de participante
+  html+='<div style="display:flex;align-items:center;gap:8px;margin-bottom:1rem;flex-wrap:wrap">';
+  html+='<select onchange="renderPont(this.value)" style="flex:1;max-width:280px">';
+  html+='<option value="'+user.id+'">'+(isMe?'👤 Meus pontos':'Meus pontos')+'</option>';
+  parts.slice().sort((a,b)=>a.nome.localeCompare(b.nome)).forEach(p=>{
+    if(p.id===user.id)return;
+    html+='<option value="'+p.id+'"'+(p.id===pid?' selected':'')+'>'+p.nome+'</option>';
+  });
+  html+='</select>';
+  if(!isMe)html+='<button class="btn sm" onclick="renderPont()">👤 Voltar para meus pontos</button>';
+  html+='</div>';
+  if(!isMe)html+='<div class="ib" style="margin-bottom:1rem">Visualizando pontos de <strong>'+viewPart.nome+'</strong></div>';
+  html+='<div class="card" style="text-align:center;margin-bottom:1rem"><div style="font-family:\'Barlow Condensed\',sans-serif;font-size:48px;font-weight:900;color:var(--green)">'+total+'</div><div style="font-size:14px;color:var(--muted)">pontos totais</div><div style="font-size:13px;color:var(--amber);margin-top:4px">'+cr+' placar'+(cr!==1?'es':'')+' cravado'+(cr!==1?'s':'')+'</div></div>';
   var apRes=apostas.filter(a=>{if(a.participante_id!==pid)return false;var j=jogos.find(x=>x.id===a.jogo_id);return j&&j.gols_a!==null&&j.gols_a!==undefined;}).sort((a,b)=>a.jogo_id-b.jogo_id);
   if(apRes.length){
     var ptJ=0;apRes.forEach(a=>{var j=jogos.find(x=>x.id===a.jogo_id);ptJ+=calcPts(a.gols_a,a.gols_b,j.gols_a,j.gols_b,j.dobro);if(a.bonus_correto)ptJ+=20;});
@@ -593,7 +609,14 @@ async function renderPont(){
     });
     html+='</div>';
   }
-  var myGrpP=grupos.filter(g=>g.participante_id===pid);
+  // Busca grupos do participante visualizado
+  var myGrpP=[];
+  if(isMe){
+    myGrpP=grupos.filter(g=>g.participante_id===pid);
+  } else {
+    var gRes=await sb.from('palpites_grupos').select('*').eq('participante_id',pid);
+    myGrpP=gRes.data||[];
+  }
   if(myGrpP.length){
     var ptG=myGrpP.filter(g=>g.correto).length*50;
     html+='<div class="card"><div style="font-size:14px;font-weight:500;margin-bottom:.75rem">Grupos <span style="color:var(--green)">'+ptG+' pts</span></div><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px">';
