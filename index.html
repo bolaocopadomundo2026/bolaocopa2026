@@ -892,84 +892,156 @@ function toggleGrpAcc(id){
 async function renderCuriosidades(){
   await load();
   var html='';
+  var jogosComRes=jogos.filter(j=>j.gols_a!==null&&j.gols_a!==undefined);
+  var jogosComResIds=jogosComRes.map(j=>j.id);
 
-  // Total de apostas
+  // === SOBRE O BOLAO ===
   html+='<div class="card"><div style="font-size:13px;color:var(--muted);margin-bottom:1rem;text-transform:uppercase;letter-spacing:.5px;font-weight:600">📊 Sobre o Bolão</div>';
   html+='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px">';
   html+='<div class="metric"><div class="mv">'+apostas.length+'</div><div class="ml">Apostas feitas</div></div>';
-
-  // Total de cravadas
   var totalCrav=0;
-  apostas.forEach(a=>{
-    var j=jogos.find(x=>x.id===a.jogo_id);
-    if(j&&j.gols_a!==null&&j.gols_a!==undefined&&Number(a.gols_a)===Number(j.gols_a)&&Number(a.gols_b)===Number(j.gols_b))totalCrav++;
+  apostas.forEach(function(a){
+    var j=jogos.find(function(x){return x.id===a.jogo_id;});
+    if(j&&j.gols_a!==null&&Number(a.gols_a)===Number(j.gols_a)&&Number(a.gols_b)===Number(j.gols_b))totalCrav++;
   });
   html+='<div class="metric"><div class="mv">'+totalCrav+'</div><div class="ml">Cravadas no bolão</div></div>';
   html+='</div></div>';
 
-  // Quem mais cravou
-  var jogosComRes=jogos.filter(j=>j.gols_a!==null&&j.gols_a!==undefined);
-  html+='<div class="card"><div style="font-size:13px;color:var(--muted);margin-bottom:1rem;text-transform:uppercase;letter-spacing:.5px;font-weight:600">👑 Destaques</div>';
+  // === DESTAQUES INDIVIDUAIS ===
+  html+='<div class="card"><div style="font-size:13px;color:var(--muted);margin-bottom:1rem;text-transform:uppercase;letter-spacing:.5px;font-weight:600">👑 Destaques Individuais</div>';
 
-  var cravMap={};parts.forEach(p=>{cravMap[p.id]=0;});
-  apostas.forEach(a=>{
-    var j=jogos.find(x=>x.id===a.jogo_id);
-    if(j&&j.gols_a!==null&&j.gols_a!==undefined&&Number(a.gols_a)===Number(j.gols_a)&&Number(a.gols_b)===Number(j.gols_b))cravMap[a.participante_id]=(cravMap[a.participante_id]||0)+1;
+  function statRow(emoji, titulo, valor){
+    return '<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)"><span style="font-size:22px">'+emoji+'</span><div><div style="font-size:13px;font-weight:600">'+titulo+'</div><div style="font-size:13px;color:var(--green)">'+valor+'</div></div></div>';
+  }
+
+  // Quem mais cravou
+  var cravMap={};parts.forEach(function(p){cravMap[p.id]=0;});
+  apostas.forEach(function(a){
+    var j=jogos.find(function(x){return x.id===a.jogo_id;});
+    if(j&&j.gols_a!==null&&Number(a.gols_a)===Number(j.gols_a)&&Number(a.gols_b)===Number(j.gols_b))cravMap[a.participante_id]=(cravMap[a.participante_id]||0)+1;
   });
-  var maxCrav=Math.max(...Object.values(cravMap));
-  var maissCrav=parts.filter(p=>cravMap[p.id]===maxCrav).map(p=>p.nome.split(' ')[0]).join(', ');
-  html+='<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)">';
-  html+='<span style="font-size:24px">🎯</span><div><div style="font-size:13px;font-weight:600">Quem mais cravou</div>';
-  html+='<div style="font-size:13px;color:var(--green)">'+maissCrav+' — '+maxCrav+' cravada'+(maxCrav!==1?'s':'')+'</div></div></div>';
+  var maxCrav=Math.max.apply(null,Object.values(cravMap));
+  var maisCrav=parts.filter(function(p){return cravMap[p.id]===maxCrav;}).map(function(p){return p.nome;}).join(', ');
+  html+=statRow('🎯','Quem mais cravou',maisCrav+' — '+maxCrav+' cravada'+(maxCrav!==1?'s':''));
 
   // Mais consistente
-  var jogosComResIds=jogosComRes.map(j=>j.id);
   var consMap={};
-  parts.forEach(p=>{
-    var apPart=apostas.filter(a=>a.participante_id===p.id&&jogosComResIds.includes(a.jogo_id));
-    var pontuou=apPart.filter(a=>{
-      var j=jogos.find(x=>x.id===a.jogo_id);
-      return j&&calcPts(a.gols_a,a.gols_b,j.gols_a,j.gols_b,j.dobro)>0;
-    }).length;
-    consMap[p.id]=apPart.length>0?Math.round(pontuou/apPart.length*100):0;
+  parts.forEach(function(p){
+    var apP=apostas.filter(function(a){return a.participante_id===p.id&&jogosComResIds.includes(a.jogo_id);});
+    var pont=apP.filter(function(a){var j=jogos.find(function(x){return x.id===a.jogo_id;});return j&&calcPts(a.gols_a,a.gols_b,j.gols_a,j.gols_b,j.dobro)>0;}).length;
+    consMap[p.id]=apP.length>0?Math.round(pont/apP.length*100):0;
   });
-  var maxCons=Math.max(...Object.values(consMap));
-  var maisCons=parts.filter(p=>consMap[p.id]===maxCons&&consMap[p.id]>0).map(p=>p.nome.split(' ')[0]).join(', ');
-  html+='<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)">';
-  html+='<span style="font-size:24px">💪</span><div><div style="font-size:13px;font-weight:600">Mais consistente</div>';
-  html+='<div style="font-size:13px;color:var(--green)">'+maisCons+' — '+maxCons+'% dos jogos pontuados</div></div></div>';
+  var maxCons=Math.max.apply(null,Object.values(consMap));
+  var maisCons=parts.filter(function(p){return consMap[p.id]===maxCons&&consMap[p.id]>0;}).map(function(p){return p.nome;}).join(', ');
+  html+=statRow('💪','Mais consistente',maisCons+' — '+maxCons+'% dos jogos pontuados');
+
+  // Quem mais errou (mais zeros)
+  var erroMap={};parts.forEach(function(p){erroMap[p.id]=0;});
+  apostas.forEach(function(a){
+    var j=jogos.find(function(x){return x.id===a.jogo_id;});
+    if(j&&j.gols_a!==null&&calcPts(a.gols_a,a.gols_b,j.gols_a,j.gols_b,j.dobro)===0)erroMap[a.participante_id]=(erroMap[a.participante_id]||0)+1;
+  });
+  var maxErro=Math.max.apply(null,Object.values(erroMap));
+  var maisErro=parts.filter(function(p){return erroMap[p.id]===maxErro;}).map(function(p){return p.nome;}).join(', ');
+  html+=statRow('📉','Quem mais errou',maisErro+' — '+maxErro+' zero'+(maxErro!==1?'s':''));
+
+  // Sequencia atual (jogos consecutivos pontuando)
+  var seqMap={};
+  parts.forEach(function(p){
+    var jogosOrd=jogosComRes.slice().sort(function(a,b){return a.id-b.id;});
+    var seq=0,maxSeq=0;
+    jogosOrd.forEach(function(j){
+      var a=apostas.find(function(x){return x.participante_id===p.id&&x.jogo_id===j.id;});
+      if(a&&calcPts(a.gols_a,a.gols_b,j.gols_a,j.gols_b,j.dobro)>0){seq++;maxSeq=Math.max(maxSeq,seq);}
+      else seq=0;
+    });
+    seqMap[p.id]=maxSeq;
+  });
+  var maxSeq=Math.max.apply(null,Object.values(seqMap));
+  var maisSeq=parts.filter(function(p){return seqMap[p.id]===maxSeq&&maxSeq>0;}).map(function(p){return p.nome;}).join(', ');
+  if(maxSeq>0)html+=statRow('🔥','Maior sequência pontuando',maisSeq+' — '+maxSeq+' jogo'+(maxSeq!==1?'s':''));
+
+  // Apostador mais unico
+  var unicoMap={};parts.forEach(function(p){unicoMap[p.id]=0;});
+  jogos.forEach(function(j){
+    var apJ=apostas.filter(function(a){return a.jogo_id===j.id&&a.gols_a!==null;});
+    var placCount={};
+    apJ.forEach(function(a){var k=a.gols_a+'x'+a.gols_b;placCount[k]=(placCount[k]||0)+1;});
+    apJ.forEach(function(a){var k=a.gols_a+'x'+a.gols_b;if(placCount[k]===1)unicoMap[a.participante_id]=(unicoMap[a.participante_id]||0)+1;});
+  });
+  var maxUnico=Math.max.apply(null,Object.values(unicoMap));
+  var maisUnico=parts.filter(function(p){return unicoMap[p.id]===maxUnico&&maxUnico>0;}).map(function(p){return p.nome;}).join(', ');
+  if(maxUnico>0)html+=statRow('🎰','Apostador mais único',maisUnico+' — '+maxUnico+' aposta'+(maxUnico!==1?'s':'')+' que só ele fez');
+
+  html+='</div>';
+
+  // === SOBRE OS JOGOS ===
+  html+='<div class="card"><div style="font-size:13px;color:var(--muted);margin-bottom:1rem;text-transform:uppercase;letter-spacing:.5px;font-weight:600">⚽ Sobre os Jogos</div>';
 
   // Placar mais apostado
   var placMap={};
-  apostas.forEach(a=>{
+  apostas.forEach(function(a){
     if(a.gols_a===null||a.gols_a===undefined)return;
-    var k=a.gols_a+'x'+a.gols_b;
-    placMap[k]=(placMap[k]||0)+1;
+    var k=a.gols_a+'x'+a.gols_b;placMap[k]=(placMap[k]||0)+1;
   });
-  var maxPlac=Math.max(...Object.values(placMap));
-  var maisPlac=Object.entries(placMap).filter(([k,v])=>v===maxPlac).map(([k])=>k).join(', ');
-  html+='<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)">';
-  html+='<span style="font-size:24px">⚽</span><div><div style="font-size:13px;font-weight:600">Placar mais apostado</div>';
-  html+='<div style="font-size:13px;color:var(--green)">'+maisPlac+' — '+maxPlac+' apostas</div></div></div>';
+  if(Object.keys(placMap).length){
+    var maxPlac=Math.max.apply(null,Object.values(placMap));
+    var maisPlac=Object.entries(placMap).filter(function(e){return e[1]===maxPlac;}).map(function(e){return e[0];}).join(', ');
+    html+=statRow('⚽','Placar mais apostado',maisPlac+' — '+maxPlac+' apostas');
+  }
 
   // Jogo com mais palpites iguais
   var jogoIgual=null,maxIgual=0;
-  jogos.forEach(j=>{
-    var apJ=apostas.filter(a=>a.jogo_id===j.id&&a.gols_a!==null);
+  jogos.forEach(function(j){
+    var apJ=apostas.filter(function(a){return a.jogo_id===j.id&&a.gols_a!==null;});
     var igMap={};
-    apJ.forEach(a=>{var k=a.gols_a+'x'+a.gols_b;igMap[k]=(igMap[k]||0)+1;});
-    var maxIg=Math.max(...Object.values(igMap||{0:0}));
-    if(maxIg>maxIgual){maxIgual=maxIg;jogoIgual={j,placar:Object.entries(igMap).find(([k,v])=>v===maxIg)[0]};}
+    apJ.forEach(function(a){var k=a.gols_a+'x'+a.gols_b;igMap[k]=(igMap[k]||0)+1;});
+    var entries=Object.entries(igMap);
+    if(!entries.length)return;
+    var maxIg=Math.max.apply(null,entries.map(function(e){return e[1];}));
+    if(maxIg>maxIgual){maxIgual=maxIg;var placar=entries.find(function(e){return e[1]===maxIg;})[0];jogoIgual={j:j,placar:placar};}
   });
-  if(jogoIgual){
-    html+='<div style="display:flex;align-items:center;gap:12px;padding:10px 0">';
-    html+='<span style="font-size:24px">🤝</span><div><div style="font-size:13px;font-weight:600">Jogo com mais palpites iguais</div>';
-    html+='<div style="font-size:13px;color:var(--green)">Jogo '+jogoIgual.j.id+' ('+jogoIgual.j.time_a+' x '+jogoIgual.j.time_b+') — '+maxIgual+' apostaram '+jogoIgual.placar+'</div></div></div>';
-  }
-  html+='</div>';
+  if(jogoIgual)html+=statRow('🤝','Jogo com mais palpites iguais','Jogo '+jogoIgual.j.id+' ('+jogoIgual.j.time_a+' x '+jogoIgual.j.time_b+') — '+maxIgual+' apostaram '+jogoIgual.placar);
 
+  // Jogo com mais cravadas
+  var cravJogoMap={};
+  jogosComRes.forEach(function(j){
+    var apJ=apostas.filter(function(a){return a.jogo_id===j.id;});
+    var crav=apJ.filter(function(a){return Number(a.gols_a)===Number(j.gols_a)&&Number(a.gols_b)===Number(j.gols_b);}).length;
+    cravJogoMap[j.id]={j:j,crav:crav};
+  });
+  var entriesCrav=Object.values(cravJogoMap);
+  if(entriesCrav.length){
+    var maxCravJ=Math.max.apply(null,entriesCrav.map(function(e){return e.crav;}));
+    var jogoCrav=entriesCrav.find(function(e){return e.crav===maxCravJ;});
+    if(jogoCrav&&maxCravJ>0)html+=statRow('⚡','Jogo com mais cravadas','Jogo '+jogoCrav.j.id+' ('+jogoCrav.j.time_a+' x '+jogoCrav.j.time_b+' — '+jogoCrav.j.gols_a+'x'+jogoCrav.j.gols_b+') — '+maxCravJ+' cravada'+(maxCravJ!==1?'s':''));
+  }
+
+  // Jogo mais dificil (menor % de acertos de placar)
+  var difMap=[];
+  jogosComRes.forEach(function(j){
+    var apJ=apostas.filter(function(a){return a.jogo_id===j.id&&a.gols_a!==null;});
+    if(apJ.length<2)return;
+    var pont=apJ.filter(function(a){return calcPts(a.gols_a,a.gols_b,j.gols_a,j.gols_b,false)>0;}).length;
+    difMap.push({j:j,pct:Math.round(pont/apJ.length*100),total:apJ.length});
+  });
+  difMap.sort(function(a,b){return a.pct-b.pct;});
+  if(difMap.length){
+    var dif=difMap[0];
+    html+=statRow('🤯','Jogo mais difícil','Jogo '+dif.j.id+' ('+dif.j.time_a+' x '+dif.j.time_b+') — só '+dif.pct+'% pontuou ('+dif.j.gols_a+'x'+dif.j.gols_b+')');
+  }
+
+  // Jogo mais facil (maior % de acertos de placar)
+  difMap.sort(function(a,b){return b.pct-a.pct;});
+  if(difMap.length){
+    var facil=difMap[0];
+    html+=statRow('😴','Jogo mais fácil','Jogo '+facil.j.id+' ('+facil.j.time_a+' x '+facil.j.time_b+') — '+facil.pct+'% pontuou ('+facil.j.gols_a+'x'+facil.j.gols_b+')');
+  }
+
+  html+='</div>';
   D('curarea').innerHTML=html;
 }
+
 
 function pg(id,btn){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('on'));
