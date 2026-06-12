@@ -986,7 +986,7 @@ async function renderCuriosidades(){
 
   // Apostador mais unico
   var unicoMap={};parts.forEach(function(p){unicoMap[p.id]=0;});
-  jogos.forEach(function(j){
+  jogosComRes.forEach(function(j){
     var apJ=apostas.filter(function(a){return a.jogo_id===j.id&&a.gols_a!==null;});
     var placCount={};
     apJ.forEach(function(a){var k=a.gols_a+'x'+a.gols_b;placCount[k]=(placCount[k]||0)+1;});
@@ -1001,18 +1001,22 @@ async function renderCuriosidades(){
   // === SOBRE OS JOGOS ===
   html+='<div class="card"><div style="font-size:13px;color:var(--muted);margin-bottom:1rem;text-transform:uppercase;letter-spacing:.5px;font-weight:600">⚽ Sobre os Jogos</div>';
 
-  // Placar mais apostado
+  // Placar mais apostado (apenas jogos finalizados)
   var placMap={};
-  apostas.forEach(function(a){if(a.gols_a===null||a.gols_a===undefined)return;var k=a.gols_a+'x'+a.gols_b;placMap[k]=(placMap[k]||0)+1;});
+  apostas.forEach(function(a){
+    if(a.gols_a===null||a.gols_a===undefined)return;
+    if(!jogosComResIds.includes(a.jogo_id))return;
+    var k=a.gols_a+'x'+a.gols_b;placMap[k]=(placMap[k]||0)+1;
+  });
   if(Object.keys(placMap).length){
     var maxPlac=Math.max.apply(null,Object.values(placMap));
     var maisPlac=Object.entries(placMap).filter(function(e){return e[1]===maxPlac;}).map(function(e){return e[0];}).join(', ');
     html+=statRow('⚽','Placar mais apostado',maisPlac+' — '+maxPlac+' apostas');
   }
 
-  // Jogo com mais palpites iguais
+  // Jogo com mais palpites iguais (apenas jogos finalizados)
   var jogoIgual=null,maxIgual=0;
-  jogos.forEach(function(j){
+  jogosComRes.forEach(function(j){
     var apJ=apostas.filter(function(a){return a.jogo_id===j.id&&a.gols_a!==null;});
     var igMap={};apJ.forEach(function(a){var k=a.gols_a+'x'+a.gols_b;igMap[k]=(igMap[k]||0)+1;});
     var entries=Object.entries(igMap);if(!entries.length)return;
@@ -1034,9 +1038,9 @@ async function renderCuriosidades(){
     if(jogoCrav&&maxCravJ>0)html+=statRow('⚡','Jogo com mais cravadas','Jogo '+jogoCrav.j.id+' ('+jogoCrav.j.time_a+' x '+jogoCrav.j.time_b+' — '+jogoCrav.j.gols_a+'x'+jogoCrav.j.gols_b+') — '+maxCravJ+' cravada'+(maxCravJ!==1?'s':''));
   }
 
-  // Jogo mais polêmico - maior variedade de placares
+  // Jogo mais polêmico (apenas jogos finalizados)
   var polemMap=[];
-  jogos.forEach(function(j){
+  jogosComRes.forEach(function(j){
     var apJ=apostas.filter(function(a){return a.jogo_id===j.id&&a.gols_a!==null;});
     if(apJ.length<3)return;
     var unicos=new Set(apJ.map(function(a){return a.gols_a+'x'+a.gols_b;})).size;
