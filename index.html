@@ -502,6 +502,37 @@ async function renderGrupos(){
     html+='</div>';
   });
   html+='</div>';
+  // Accordion com palpites de todos (só após prazo encerrado)
+  if(fechado){
+    var todosG=await fetchAllGrupos();
+    var partsOrd=parts.slice().sort((a,b)=>a.nome.localeCompare(b.nome));
+    html+='<div class="card" style="margin-top:1rem">';
+    html+='<div style="font-size:14px;font-weight:500;margin-bottom:.75rem">Palpites de todos os participantes</div>';
+    GRUPOS.forEach(gr=>{
+      var grpParts=todosG.filter(g=>g.grupo===gr);
+      html+='<div style="border:1px solid var(--border);border-radius:8px;margin-bottom:6px;overflow:hidden">';
+      html+='<button data-acc="acc'+gr+'" onclick="toggleGrpAcc(this.dataset.acc)" style="width:100%;background:var(--bg3);border:none;color:var(--text);font-size:13px;font-weight:600;padding:10px 14px;text-align:left;cursor:pointer;display:flex;justify-content:space-between;align-items:center">';
+      html+='<span>Grupo '+gr+'</span><span id="acc'+gr+'icon">▶</span></button>';
+      html+='<div id="acc'+gr+'" style="display:none;overflow-x:auto">';
+      html+='<table style="font-size:12px;width:100%"><thead><tr>';
+      html+='<th style="text-align:left;padding:6px 10px;color:var(--muted);white-space:nowrap">Participante</th>';
+      [1,2,3,4].forEach(pos=>html+='<th style="text-align:center;padding:6px 10px;color:var(--muted)">'+pos+'º</th>');
+      html+='</tr></thead><tbody>';
+      partsOrd.forEach(p=>{
+        var isMe=p.id===user.id;
+        html+='<tr style="'+(isMe?'background:rgba(0,200,120,0.07)':'')+'">';
+        html+='<td style="padding:5px 10px;white-space:nowrap;font-weight:'+(isMe?'600':'400')+'">'+p.nome+(isMe?' 👤':'')+'</td>';
+        [1,2,3,4].forEach(pos=>{
+          var g=grpParts.find(x=>String(x.participante_id)===String(p.id)&&Number(x.posicao)===pos);
+          var cor=g&&g.correto?'color:var(--green);font-weight:600':'';
+          html+='<td style="text-align:center;padding:5px 10px;'+cor+'">'+(g&&g.selecao?g.selecao+(g.correto?' ✓':''):'—')+'</td>';
+        });
+        html+='</tr>';
+      });
+      html+='</tbody></table></div></div>';
+    });
+    html+='</div>';
+  }
   D('grparea').innerHTML=html;
 }
 
@@ -820,6 +851,13 @@ async function renderCobG(){
     html+='<td style="text-align:center;padding:4px 6px;font-weight:600;color:var(--gold)">'+te+'/6</td><td style="text-align:center;padding:4px 6px;font-weight:600;color:var(--green)">'+tg+'/48</td></tr>';
   });
   html+='</tbody></table>';D('cobgarea').innerHTML=html;
+}
+
+function toggleGrpAcc(id){
+  var el=document.getElementById(id);
+  var icon=document.getElementById(id+'icon');
+  if(el.style.display==='none'){el.style.display='';if(icon)icon.textContent='▼';}
+  else{el.style.display='none';if(icon)icon.textContent='▶';}
 }
 
 function pg(id,btn){
