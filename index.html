@@ -396,29 +396,26 @@ async function renderJogos(){
     html+='<div class="gc"><div class="gh"><span class="gn">Jogo '+j.id+'</span>'+(j.dobro?'<span class="db">🔥 Dobro</span>':'')+
       '<span class="gp '+(fechado?'pno':'pok')+'">'+(fechado?'Encerrado: ':'Aberto ate: ')+toBSB(j.prazo)+'</span>'+(resDisp?'<span class="pb">'+j.gols_a+'x'+j.gols_b+'</span>':'')+'</div>'+
       '<div class="gt"><div class="tn tnr">'+j.time_a+'</div><div style="font-size:20px;font-weight:700;color:'+(resDisp?'var(--green)':'var(--muted)')+'">'+( resDisp?j.gols_a:'?')+'</div><div class="sep">x</div><div style="font-size:20px;font-weight:700;color:'+(resDisp?'var(--green)':'var(--muted)')+'">'+( resDisp?j.gols_b:'?')+'</div><div class="tn">'+j.time_b+'</div></div>'+
-      (j.pergunta_bonus?'<div style="font-size:12px;color:var(--amber);margin-bottom:.4rem">Bonus: '+j.pergunta_bonus+'</div>':'')+
-      // Resumo de pontuacao
-      (function(){
-        if(resDisp&&fechado){
-          var apJ2=apostas.filter(function(a){return a.jogo_id===j.id;});
-          var n40=0,n25=0,n10=0,n0=0;
-          apJ2.forEach(function(a){
-            var pts=calcPts(a.gols_a,a.gols_b,j.gols_a,j.gols_b,j.dobro);
-            if(pts===40||pts===80)n40++;
-            else if(pts===25||pts===50)n25++;
-            else if(pts===10||pts===20)n10++;
-            else n0++;
-          });
-          var tot=apJ2.length||1;
-          html+='<div style="display:flex;flex-wrap:wrap;gap:8px;font-size:11px;margin-bottom:6px;padding:5px 8px;background:var(--bg3);border-radius:6px">';
-          html+='<span style="color:#00C878">🎯 '+n40+' ('+Math.round(n40/tot*100)+'%)</span>';
-          html+='<span style="color:#FFD700">🥈 '+n25+' ('+Math.round(n25/tot*100)+'%)</span>';
-          html+='<span style="color:#FF9500">🟠 '+n10+' ('+Math.round(n10/tot*100)+'%)</span>';
-          html+='<span style="color:var(--muted)">❌ '+n0+' ('+Math.round(n0/tot*100)+'%)</span>';
-          html+='</div>';
-        }
-      })();
-      html+='<div style="display:flex;flex-wrap:wrap;gap:4px">'+bets+'</div></div>';
+      (j.pergunta_bonus?'<div style="font-size:12px;color:var(--amber);margin-bottom:.4rem">Bonus: '+j.pergunta_bonus+'</div>':'');
+    if(resDisp&&fechado){
+      var apJ2=apostas.filter(function(a){return a.jogo_id===j.id;});
+      var n40=0,n25=0,n10=0,n0=0;
+      apJ2.forEach(function(a){
+        var pts=calcPts(a.gols_a,a.gols_b,j.gols_a,j.gols_b,j.dobro);
+        if(pts===40||pts===80)n40++;
+        else if(pts===25||pts===50)n25++;
+        else if(pts===10||pts===20)n10++;
+        else n0++;
+      });
+      var tot=apJ2.length||1;
+      html+='<div style="display:flex;flex-wrap:wrap;gap:8px;font-size:11px;margin-bottom:6px;padding:5px 8px;background:var(--bg3);border-radius:6px">';
+      html+='<span style="color:#00C878">🎯 '+n40+' ('+Math.round(n40/tot*100)+'%)</span>';
+      html+='<span style="color:#FFD700">🥈 '+n25+' ('+Math.round(n25/tot*100)+'%)</span>';
+      html+='<span style="color:#FF9500">🟠 '+n10+' ('+Math.round(n10/tot*100)+'%)</span>';
+      html+='<span style="color:var(--muted)">❌ '+n0+' ('+Math.round(n0/tot*100)+'%)</span>';
+      html+='</div>';
+    }
+    html+='<div style="display:flex;flex-wrap:wrap;gap:4px">'+bets+'</div></div>';
   });
   D('jarea').innerHTML=html;
 }
