@@ -1106,53 +1106,6 @@ async function renderCuriosidades(){
   bonusList.sort(function(a,b){return b.pct-a.pct||b.acertos-a.acertos;});
   if(bonusList.length&&bonusList[0].acertos>0)html+=statRow('🧠','Melhor palpiteiro de bônus',bonusList[0].nome+' — '+bonusList[0].acertos+'/'+bonusList[0].total+' acertos ('+bonusList[0].pct+'%)');
 
-  // Maior rival - par que mais aposta placares opostos
-  var rivalScore={};
-  jogosComRes.forEach(function(j){
-    var apJ=apostas.filter(function(a){return a.jogo_id===j.id&&a.gols_a!==null;});
-    for(var i=0;i<apJ.length;i++){
-      for(var k=i+1;k<apJ.length;k++){
-        var a1=apJ[i],a2=apJ[k];
-        if(a1.participante_id===a2.participante_id)continue;
-        var diff=Math.abs(Number(a1.gols_a)-Number(a2.gols_a))+Math.abs(Number(a1.gols_b)-Number(a2.gols_b));
-        var key=[a1.participante_id,a2.participante_id].sort().join('-');
-        rivalScore[key]=(rivalScore[key]||0)+diff;
-      }
-    }
-  });
-  var maxRival=Math.max.apply(null,Object.values(rivalScore)||[0]);
-  if(maxRival>0){
-    var rivalKey=Object.entries(rivalScore).find(function(e){return e[1]===maxRival;})[0];
-    var ids=rivalKey.split('-');
-    var p1=parts.find(function(p){return p.id===ids[0];});
-    var p2=parts.find(function(p){return p.id===ids[1];});
-    if(p1&&p2)html+=statRow('🤺','Maior rival',(p1.nome.split(' ')[0]+' x '+p2.nome.split(' ')[0])+' — apostam mais diferente entre si');
-  }
-
-  // Melhores amigos - par que mais aposta o mesmo placar
-  var amigosScore={};
-  jogosComRes.forEach(function(j){
-    var apJ=apostas.filter(function(a){return a.jogo_id===j.id&&a.gols_a!==null;});
-    for(var i=0;i<apJ.length;i++){
-      for(var k=i+1;k<apJ.length;k++){
-        var a1=apJ[i],a2=apJ[k];
-        if(a1.participante_id===a2.participante_id)continue;
-        if(Number(a1.gols_a)===Number(a2.gols_a)&&Number(a1.gols_b)===Number(a2.gols_b)){
-          var key=[a1.participante_id,a2.participante_id].sort().join('-');
-          amigosScore[key]=(amigosScore[key]||0)+1;
-        }
-      }
-    }
-  });
-  var maxAmigos=Math.max.apply(null,Object.values(amigosScore)||[0]);
-  if(maxAmigos>0){
-    var amigosKey=Object.entries(amigosScore).find(function(e){return e[1]===maxAmigos;})[0];
-    var aids=amigosKey.split('-');
-    var pa1=parts.find(function(p){return p.id===aids[0];});
-    var pa2=parts.find(function(p){return p.id===aids[1];});
-    if(pa1&&pa2)html+=statRow('👯','Melhores amigos',(pa1.nome.split(' ')[0]+' e '+pa2.nome.split(' ')[0])+' — apostaram o mesmo placar '+maxAmigos+' vez'+(maxAmigos!==1?'es':''));
-  }
-
   html+='</div>';
 
   // === SOBRE OS JOGOS ===
@@ -1265,6 +1218,61 @@ function pg(id,btn){
   if(id==='regras')renderRegras();
   if(id==='curiosidades')renderCuriosidades();
   if(id==='admin'){renderAdmJogos();renderAdmPartic();renderResult();}
+}
+
+async function renderCob(){
+  await load();
+  var jgOrd=jogos.slice().sort(function(a,b){return a.id-b.id;});
+  var partsOrd=parts.slice().sort(function(a,b){return a.nome.localeCompare(b.nome);});
+  if(!jgOrd.length||!partsOrd.length){D('cobarea').innerHTML='<div style="color:var(--muted)">Nenhum dado.</div>';return;}
+  var apMap={};partsOrd.forEach(function(p){apMap[p.id]={};});
+  apostas.forEach(function(a){if(apMap[a.participante_id]&&a.gols_a!==null&&a.gols_a!==undefined)apMap[a.participante_id][a.jogo_id]=true;});
+  var html='<table style="font-size:11px"><thead><tr><th style="position:sticky;left:0;background:var(--surface);z-index:1;min-width:120px;text-align:left;padding:6px 8px">Participante</th>';
+  jgOrd.forEach(function(j){var ok=j.gols_a!==null&&j.gols_a!==undefined;html+='<th style="text-align:center;padding:4px;color:'+(ok?'var(--green)':'var(--muted)')+'">'+j.id+'</th>';});
+  html+='<th style="text-align:center;padding:4px 8px;color:var(--amber)">Total</th></tr></thead><tbody>';
+  partsOrd.forEach(function(p){
+    var tot=jgOrd.filter(function(j){return apMap[p.id][j.id];}).length;
+    html+='<tr><td style="position:sticky;left:0;background:var(--bg3);z-index:1;padding:5px 8px;font-weight:500;white-space:nowrap">'+p.nome+'</td>';
+    jgOrd.forEach(function(j){var ok=apMap[p.id][j.id],r=j.gols_a!==null&&j.gols_a!==undefined;html+='<td style="text-align:center;padding:3px 4px;background:'+(r?'rgba(0,200,120,0.05)':'')+'">'+( ok?'✅':'')+'</td>';});
+    html+='<td style="text-align:center;padding:4px 8px;font-weight:600;color:var(--amber)">'+tot+'/'+jgOrd.length+'</td></tr>';
+  });
+  html+='</tbody></table>';D('cobarea').innerHTML=html;
+}
+
+async function renderCobG(){
+  await load();var todosG=await fetchAllGrupos();
+  var partsOrd=parts.slice().sort(function(a,b){return a.nome.localeCompare(b.nome);});
+  var espMap={};partsOrd.forEach(function(p){espMap[p.id]={};});
+  especiais.forEach(function(e){if(espMap[e.participante_id]&&e.resposta)espMap[e.participante_id][e.categoria]=true;});
+  var grpMap={};partsOrd.forEach(function(p){grpMap[p.id]={};});
+  todosG.forEach(function(g){if(grpMap[g.participante_id]&&g.selecao)grpMap[g.participante_id][String(g.grupo)+'-'+String(g.posicao)]=true;});
+  var espCols=[{key:'campeao',col:'C'},{key:'vice',col:'VC'},{key:'terceiro',col:'3C'},{key:'quarto',col:'4C'},{key:'artilheiro',col:'A'},{key:'luva',col:'L'}];
+  var html='<table style="font-size:11px"><thead><tr><th style="position:sticky;left:0;background:var(--surface);z-index:1;min-width:130px;text-align:left;padding:6px 8px">Participante</th>';
+  espCols.forEach(function(e){html+='<th style="text-align:center;padding:4px 5px;color:var(--gold)">'+e.col+'</th>';});
+  html+='<th style="padding:4px;background:var(--bg3);color:var(--muted);font-size:10px">|</th>';
+  GRUPOS.forEach(function(gr){html+='<th colspan="4" style="text-align:center;padding:4px;color:var(--green);border-left:1px solid var(--border)">'+gr+'</th>';});
+  html+='<th style="text-align:center;padding:4px 6px;color:var(--gold)">Esp</th><th style="text-align:center;padding:4px 6px;color:var(--green)">Grp</th></tr>';
+  html+='<tr><th style="position:sticky;left:0;background:var(--surface);z-index:1"></th>';
+  espCols.forEach(function(){html+='<th></th>';});html+='<th style="background:var(--bg3)"></th>';
+  GRUPOS.forEach(function(){[1,2,3,4].forEach(function(pos){html+='<th style="text-align:center;padding:2px 3px;color:var(--muted);font-size:10px;'+(pos===1?'border-left:1px solid var(--border)':'')+'">'+pos+'</th>';});});
+  html+='<th></th><th></th></tr></thead><tbody>';
+  partsOrd.forEach(function(p){
+    var te=espCols.filter(function(e){return espMap[p.id][e.key];}).length,tg=0;
+    GRUPOS.forEach(function(gr){[1,2,3,4].forEach(function(pos){if(grpMap[p.id][String(gr)+'-'+String(pos)])tg++;});});
+    html+='<tr><td style="position:sticky;left:0;background:var(--bg3);z-index:1;padding:5px 8px;font-weight:500;white-space:nowrap">'+p.nome+'</td>';
+    espCols.forEach(function(e){html+='<td style="text-align:center;padding:3px 5px">'+(espMap[p.id][e.key]?'✅':'')+'</td>';});
+    html+='<td style="background:var(--bg3)"></td>';
+    GRUPOS.forEach(function(gr){[1,2,3,4].forEach(function(pos){html+='<td style="text-align:center;padding:3px;'+(pos===1?'border-left:1px solid var(--border)':'')+'">'+(grpMap[p.id][String(gr)+'-'+String(pos)]?'✅':'')+'</td>';});});
+    html+='<td style="text-align:center;padding:4px 6px;font-weight:600;color:var(--gold)">'+te+'/6</td><td style="text-align:center;padding:4px 6px;font-weight:600;color:var(--green)">'+tg+'/48</td></tr>';
+  });
+  html+='</tbody></table>';D('cobgarea').innerHTML=html;
+}
+
+function toggleGrpAcc(id){
+  var el=document.getElementById(id);
+  var icon=document.getElementById(id+'icon');
+  if(el.style.display==='none'){el.style.display='';if(icon)icon.textContent='▼';}
+  else{el.style.display='none';if(icon)icon.textContent='▶';}
 }
 
 function at(tab,btn){
