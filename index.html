@@ -132,6 +132,7 @@ tr:last-child td{border-bottom:none}
       <button class="nb" id="nadm" style="display:none" onclick="pg('admin',this)">Admin</button>
     </nav></div>
   </header>
+  <div id="countdown-bar" style="display:none;background:var(--gdim);border-bottom:1px solid var(--border);padding:6px 1rem;text-align:center;font-size:13px;color:var(--green)"></div>
   <main>
     <div id="pg-ranking" class="page on"><div class="sh">Classificacao</div><div class="metrics" id="mets"></div><div class="card" id="rlist"></div></div>
     <div id="pg-jogos" class="page"><div class="sh">Placares Oficiais</div>
@@ -319,6 +320,30 @@ async function start(){
   var g=user.id==='__guest__';
   ['nap','nesp','ngrp','npont'].forEach(id=>D(id).style.display=g?'none':'');
   S('app');await load();renderRanking();
+  iniciarContador();
+}
+
+function iniciarContador(){
+  if(window._countdownInterval)clearInterval(window._countdownInterval);
+  function atualizar(){
+    var agora=new Date();
+    var proximos=jogos.filter(function(j){return j.ativo&&j.prazo&&new Date(j.prazo)>agora;});
+    proximos.sort(function(a,b){return new Date(a.prazo)-new Date(b.prazo);});
+    var bar=D('countdown-bar');
+    if(!proximos.length){bar.style.display='none';return;}
+    var j=proximos[0];
+    var diff=Math.floor((new Date(j.prazo)-agora)/1000);
+    if(diff<=0){bar.style.display='none';return;}
+    var h=Math.floor(diff/3600),m=Math.floor((diff%3600)/60),s=diff%60;
+    var pad=function(n){return n<10?'0'+n:String(n);};
+    var urgente=diff<3600;
+    bar.style.display='';
+    bar.style.color=urgente?'var(--amber)':'var(--green)';
+    bar.style.background=urgente?'rgba(255,179,71,0.1)':'var(--gdim)';
+    bar.innerHTML='⏱ Próximo prazo: <strong>Jogo '+j.id+' — '+j.time_a+' x '+j.time_b+'</strong> &nbsp;|&nbsp; <strong style="font-family:monospace">'+pad(h)+':'+pad(m)+':'+pad(s)+'</strong>'+(urgente?' 🔥':'');
+  }
+  atualizar();
+  window._countdownInterval=setInterval(atualizar,1000);
 }
 
 function logout(){
@@ -1070,6 +1095,7 @@ async function renderCuriosidades(){
   html+='</div>';
   D('curarea').innerHTML=html;
 }
+
 
 
 function pg(id,btn){
