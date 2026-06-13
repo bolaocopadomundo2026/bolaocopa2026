@@ -357,7 +357,7 @@ async function renderRanking(){
   var maxPts=Math.max(1,...parts.map(p=>getPts(p.id)));
   var totalRes=jogos.filter(j=>j.gols_a!==null&&j.gols_a!==undefined).length;
   D('mets').innerHTML='<div class="metric"><div class="mv">'+parts.length+'</div><div class="ml">Participantes</div></div><div class="metric"><div class="mv">'+jogos.length+'</div><div class="ml">Jogos</div></div><div class="metric"><div class="mv">'+totalRes+'</div><div class="ml">Resultados</div></div>';
-  var medals=sorted.map((_,i)=>String(i+1)+'o');
+  var medal=function(i){return i===0?'🏆':i===1?'🥈':i===2?'🥉':String(i+1)+'º';};
   var pc=i=>i===0?'p1':i===1?'p2':i===2?'p3':'';
   D('rlist').innerHTML=sorted.map((p,i)=>{
     var pts=getPts(p.id),cr=cravadas(p.id),pct=Math.round(pts/maxPts*100);
