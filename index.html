@@ -359,9 +359,11 @@ async function renderRanking(){
   D('mets').innerHTML='<div class="metric"><div class="mv">'+parts.length+'</div><div class="ml">Participantes</div></div><div class="metric"><div class="mv">'+jogos.length+'</div><div class="ml">Jogos</div></div><div class="metric"><div class="mv">'+totalRes+'</div><div class="ml">Resultados</div></div>';
   var medal=function(i){return i===0?'🏆':i===1?'🥈':i===2?'🥉':String(i+1)+'º';};
   var pc=i=>i===0?'p1':i===1?'p2':i===2?'p3':'';
+  var liderPts=sorted.length>0?getPts(sorted[0].id):0;
   D('rlist').innerHTML=sorted.map((p,i)=>{
     var pts=getPts(p.id),cr=cravadas(p.id),pct=Math.round(pts/maxPts*100);
-    return '<div class="ri"><div class="rp '+pc(i)+'">'+(i+1)+'</div><div class="rav">'+initials(p.nome)+'</div><div style="flex:1"><div class="rname">'+p.nome+'</div><div class="rsub">'+cr+' cravada'+(cr!==1?'s':'')+'</div></div><div class="rbar"><div class="rbarv" style="width:'+pct+'%"></div></div><div class="rpts">'+pts+' pts</div></div>';
+    var diff=i>0?' · <span style="color:var(--danger);font-size:10px">-'+(liderPts-pts)+' pts</span>':'';
+    return '<div class="ri"><div class="rp '+pc(i)+'">'+(medal(i))+'</div><div class="rav">'+initials(p.nome)+'</div><div style="flex:1"><div class="rname">'+p.nome+'</div><div class="rsub">'+cr+' cravada'+(cr!==1?'s':'')+diff+'</div></div><div class="rbar"><div class="rbarv" style="width:'+pct+'%"></div></div><div class="rpts">'+pts+' pts</div></div>';
   }).join('');
 }
 
