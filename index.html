@@ -134,7 +134,7 @@ tr:last-child td{border-bottom:none}
   </header>
   <div id="countdown-bar" style="display:none;background:var(--gdim);border-bottom:1px solid var(--border);padding:6px 1rem;text-align:center;font-size:13px;color:var(--green)"></div>
   <main>
-    <div id="pg-ranking" class="page on"><div class="sh">Classificacao</div><div class="metrics" id="mets"></div><div class="card" id="rlist"></div></div>
+    <div id="pg-ranking" class="page on"><div class="sh">Classificacao</div><div id="prog-bolao"></div><div class="metrics" id="mets"></div><div class="card" id="rlist"></div></div>
     <div id="pg-jogos" class="page"><div class="sh">Placares Oficiais</div>
       <div class="row"><div class="grow"><select id="jfase" onchange="renderJogos()"><option value="grupos">Fase de grupos</option><option value="mata">2a Fase</option><option value="oitavas">Oitavas</option><option value="quartas">Quartas</option><option value="semis">Semifinal</option><option value="final">Final</option></select></div></div>
       <div id="jarea"></div></div>
@@ -411,7 +411,7 @@ async function renderRanking(){
 
   progHTML+='</div>';
   D('mets').innerHTML='<div class="metric"><div class="mv">'+parts.length+'</div><div class="ml">Participantes</div></div><div class="metric"><div class="mv">'+jogos.length+'</div><div class="ml">Jogos</div></div><div class="metric"><div class="mv">'+totalRes+'</div><div class="ml">Resultados</div></div>';
-  document.getElementById('mets').insertAdjacentHTML('beforebegin', progHTML);
+  D('prog-bolao').innerHTML=progHTML;
   var medal=function(i){return i===0?'🏆':i===1?'🥈':i===2?'🥉':String(i+1)+'º';};
   var pc=i=>i===0?'p1':i===1?'p2':i===2?'p3':'';
   D('rlist').innerHTML=sorted.map((p,i)=>{
