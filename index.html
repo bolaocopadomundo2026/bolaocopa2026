@@ -229,7 +229,11 @@ async function fetchAllGrupos(){
   return all;
 }
 
-async function load(){
+var _lastLoad=0;
+async function load(force){
+  var now=Date.now();
+  // Usa cache se dados foram carregados há menos de 2 minutos (exceto se forçado)
+  if(!force&&_lastLoad&&(now-_lastLoad)<120000&&jogos.length)return;
   var [j,p,a,e]=await Promise.all([
     sb.from('jogos').select('*').order('id'),
     sb.from('participantes').select('id,nome').order('nome'),
@@ -245,6 +249,7 @@ async function load(){
   }
   var r=await sb.from('regras').select('prazo_especiais,prazo_grupos').eq('id',1).single();
   if(r.data){prazos={esp:r.data.prazo_especiais,grp:r.data.prazo_grupos};}
+  _lastLoad=Date.now();
 }
 
 function calcPts(ga,gb,ra,rb,dob){
@@ -469,7 +474,7 @@ async function saveAp(jid){
   var {error}=await sb.from('apostas').upsert({participante_id:user.id,jogo_id:jid,gols_a:Number(ga),gols_b:Number(gb),resposta_bonus:bns},{onConflict:'participante_id,jogo_id'});
   if(error){toast('Erro: '+error.message);return;}
   if(window._ed)delete window._ed[jid];
-  toast('✅ Palpite salvo!');await load();renderApostas();
+  toast('✅ Palpite salvo!');await load(true);renderApostas();
 }
 
 async function renderEspeciais(){
@@ -523,7 +528,7 @@ async function saveEsp(key){
   if(!val){toast('Digite seu palpite.');return;}
   var {error}=await sb.from('especiais').upsert({participante_id:user.id,categoria:key,resposta:val},{onConflict:'participante_id,categoria'});
   if(error){toast('Erro: '+error.message);return;}
-  toast('✅ Palpite salvo!');await load();renderEspeciais();
+  toast('✅ Palpite salvo!');await load(true);renderEspeciais();
 }
 
 async function renderGrupos(){
@@ -775,7 +780,7 @@ async function saveResult(jid){
   jid=Number(jid);var ga=D('rga'+jid)?D('rga'+jid).value:'',gb=D('rgb'+jid)?D('rgb'+jid).value:'';
   var {error}=await sb.from('jogos').update({gols_a:ga!==''?Number(ga):null,gols_b:gb!==''?Number(gb):null}).eq('id',jid);
   if(error){toast('Erro: '+error.message);return;}
-  toast('⚡ Resultado salvo!');await load();renderResult();renderRanking();
+  toast('⚡ Resultado salvo!');await load(true);renderResult();renderRanking();
 }
 
 async function renderAdmBonus(){
@@ -804,7 +809,7 @@ async function togBonus(aid,correto,jid){
   var cor=correto==='true'||correto===true;
   var {error}=await sb.from('apostas').update({bonus_correto:cor}).eq('id',aid);
   if(error){toast('Erro: '+error.message);return;}
-  toast(cor?'⭐ +20 pts!':'Bonus removido.');await load();renderAdmBonus();renderRanking();
+  toast(cor?'⭐ +20 pts!':'Bonus removido.');await load(true);renderAdmBonus();renderRanking();
 }
 
 async function renderAdmEsp(){
@@ -820,7 +825,7 @@ async function togEsp(eid,correto){
   var cor=correto==='true'||correto===true;
   var {error}=await sb.from('especiais').update({correto:cor}).eq('id',eid);
   if(error){toast('Erro: '+error.message);return;}
-  toast(cor?'✅ Pontos atribuidos!':'Removido.');await load();renderAdmEsp();renderRanking();
+  toast(cor?'✅ Pontos atribuidos!':'Removido.');await load(true);renderAdmEsp();renderRanking();
 }
 
 async function renderAdmGrupos(){
@@ -844,7 +849,7 @@ async function togGrp(gid,correto){
   var cor=correto==='true'||correto===true;
   var {error}=await sb.from('palpites_grupos').update({correto:cor}).eq('id',gid);
   if(error){toast('Erro: '+error.message);return;}
-  toast(cor?'✅ +50 pts!':'Removido.');await load();renderAdmGrupos();renderRanking();
+  toast(cor?'✅ +50 pts!':'Removido.');await load(true);renderAdmGrupos();renderRanking();
 }
 
 async function renderAdmConfig(){
