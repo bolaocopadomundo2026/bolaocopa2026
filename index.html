@@ -1256,7 +1256,7 @@ async function renderCob(){
   partsOrd.forEach(function(p){
     var tot=jgOrd.filter(function(j){return apMap[p.id][j.id];}).length;
     html+='<tr><td style="position:sticky;left:0;background:var(--bg3);z-index:1;padding:5px 8px;font-weight:500;white-space:nowrap">'+p.nome+'</td>';
-    jgOrd.forEach(function(j){var ok=apMap[p.id][j.id],r=j.gols_a!==null&&j.gols_a!==undefined;html+='<td style="text-align:center;padding:3px 4px;background:'+(r?'rgba(0,200,120,0.05)':'')+'">'+( ok?'✅':'')+'</td>';});
+    jgOrd.forEach(function(j){var ok=apMap[p.id][j.id],r=j.gols_a!==null&&j.gols_a!==undefined;html+='<td style="text-align:center;padding:3px 4px;background:'+(r?'rgba(0,200,120,0.15)':'')+'">'+( ok?'✅':'')+'</td>';});
     html+='<td style="text-align:center;padding:4px 8px;font-weight:600;color:var(--amber)">'+tot+'/'+jgOrd.length+'</td></tr>';
   });
   html+='</tbody></table>';D('cobarea').innerHTML=html;
