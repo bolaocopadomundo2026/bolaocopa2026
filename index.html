@@ -361,7 +361,57 @@ async function renderRanking(){
   var sorted=parts.slice().sort((a,b)=>{var d=getPts(b.id)-getPts(a.id);return d!==0?d:cravadas(b.id)-cravadas(a.id);});
   var maxPts=Math.max(1,...parts.map(p=>getPts(p.id)));
   var totalRes=jogos.filter(j=>j.gols_a!==null&&j.gols_a!==undefined).length;
+  // Barra de progresso do bolão
+  var jogosTotal=jogos.filter(function(j){return j.ativo;}).length||jogos.length;
+  var jogosFin=jogosComRes=jogos.filter(function(j){return j.gols_a!==null&&j.gols_a!==undefined;}).length;
+  var jogosTotal104=104; // total de jogos do torneio
+  var pctJogos=Math.round(jogosFin/jogosTotal104*100);
+
+  var ptsEspMax=1700;
+  var ptsEspAtual=0;
+  especiais.filter(function(e){return e.correto;}).forEach(function(e){
+    var d=ESPS.find(function(x){return x.key===e.categoria;});if(d)ptsEspAtual+=d.pts;
+  });
+  var pctEsp=Math.round(ptsEspAtual/ptsEspMax*100);
+
+  var ptsGrpMax=2400;
+  var ptsGrpAtual=grupos.filter(function(g){return g.correto;}).length*50;
+  var pctGrp=Math.round(ptsGrpAtual/ptsGrpMax*100);
+
+  function barHTML(pct,cor){
+    var filled=Math.round(pct/100*20);
+    var bar='';
+    for(var i=0;i<20;i++) bar+='<span style="color:'+(i<filled?cor:'rgba(255,255,255,0.1)')+'">█</span>';
+    return bar;
+  }
+
+  var progHTML='<div class="card" style="margin-bottom:1rem">';
+  progHTML+='<div style="font-size:13px;font-weight:600;color:var(--muted);margin-bottom:.75rem;text-transform:uppercase;letter-spacing:.5px">⚽ Copa do Mundo 2026</div>';
+
+  progHTML+='<div style="margin-bottom:.625rem">';
+  progHTML+='<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">';
+  progHTML+='<span style="font-size:13px;min-width:80px">🏆 Jogos</span>';
+  progHTML+='<span style="font-family:monospace;font-size:13px;letter-spacing:1px">'+barHTML(pctJogos,'var(--green)')+'</span>';
+  progHTML+='<span style="font-size:12px;color:var(--muted)">'+jogosFin+'/'+jogosTotal104+' finalizados ('+pctJogos+'%)</span>';
+  progHTML+='</div></div>';
+
+  progHTML+='<div style="margin-bottom:.625rem">';
+  progHTML+='<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">';
+  progHTML+='<span style="font-size:13px;min-width:80px">⭐ Especiais</span>';
+  progHTML+='<span style="font-family:monospace;font-size:13px;letter-spacing:1px">'+barHTML(pctEsp,'var(--gold)')+'</span>';
+  progHTML+='<span style="font-size:12px;color:var(--muted)">'+ptsEspAtual+'/'+ptsEspMax+' pts ('+pctEsp+'%)</span>';
+  progHTML+='</div></div>';
+
+  progHTML+='<div>';
+  progHTML+='<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">';
+  progHTML+='<span style="font-size:13px;min-width:80px">🗂 Grupos</span>';
+  progHTML+='<span style="font-family:monospace;font-size:13px;letter-spacing:1px">'+barHTML(pctGrp,'var(--amber)')+'</span>';
+  progHTML+='<span style="font-size:12px;color:var(--muted)">'+ptsGrpAtual+'/'+ptsGrpMax+' pts ('+pctGrp+'%)</span>';
+  progHTML+='</div></div>';
+
+  progHTML+='</div>';
   D('mets').innerHTML='<div class="metric"><div class="mv">'+parts.length+'</div><div class="ml">Participantes</div></div><div class="metric"><div class="mv">'+jogos.length+'</div><div class="ml">Jogos</div></div><div class="metric"><div class="mv">'+totalRes+'</div><div class="ml">Resultados</div></div>';
+  document.getElementById('mets').insertAdjacentHTML('beforebegin', progHTML);
   var medal=function(i){return i===0?'🏆':i===1?'🥈':i===2?'🥉':String(i+1)+'º';};
   var pc=i=>i===0?'p1':i===1?'p2':i===2?'p3':'';
   D('rlist').innerHTML=sorted.map((p,i)=>{
