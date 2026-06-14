@@ -1251,7 +1251,14 @@ async function renderCob(){
   var apMap={};partsOrd.forEach(function(p){apMap[p.id]={};});
   apostas.forEach(function(a){if(apMap[a.participante_id]&&a.gols_a!==null&&a.gols_a!==undefined)apMap[a.participante_id][a.jogo_id]=true;});
   var html='<table style="font-size:11px"><thead><tr><th style="position:sticky;left:0;background:var(--surface);z-index:1;min-width:120px;text-align:left;padding:6px 8px">Participante</th>';
-  jgOrd.forEach(function(j){var ok=j.gols_a!==null&&j.gols_a!==undefined;html+='<th style="text-align:center;padding:4px;color:'+(ok?'var(--green)':'var(--muted)')+'">'+j.id+'</th>';});
+  var hoje=new Date();var hojeStr=hoje.getFullYear()+'-'+(hoje.getMonth()<9?'0':'')+(hoje.getMonth()+1)+'-'+(hoje.getDate()<10?'0':'')+hoje.getDate();
+  jgOrd.forEach(function(j){
+    var ok=j.gols_a!==null&&j.gols_a!==undefined;
+    var fechaHoje=j.prazo&&String(j.prazo).slice(0,10)===hojeStr&&!ok;
+    var aberto=j.ativo&&!ok&&!fechaHoje;
+    var cor=ok?'var(--green)':fechaHoje?'var(--danger)':aberto?'var(--amber)':'var(--muted)';
+    html+='<th style="text-align:center;padding:4px;color:'+cor+'">'+j.id+'</th>';
+  });
   html+='<th style="text-align:center;padding:4px 8px;color:var(--amber)">Total</th></tr></thead><tbody>';
   partsOrd.forEach(function(p){
     var tot=jgOrd.filter(function(j){return apMap[p.id][j.id];}).length;
