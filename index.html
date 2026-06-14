@@ -414,9 +414,23 @@ async function renderRanking(){
   D('prog-bolao').innerHTML=progHTML;
   var medal=function(i){return i===0?'🏆':i===1?'🥈':i===2?'🥉':String(i+1)+'º';};
   var pc=i=>i===0?'p1':i===1?'p2':i===2?'p3':'';
-  D('rlist').innerHTML=sorted.map((p,i)=>{
+  // Jogos finalizados
+  var jogosFinIds=jogos.filter(function(j){return j.gols_a!==null&&j.gols_a!==undefined;}).map(function(j){return j.id;});
+  var totalFin=jogosFinIds.length;
+  // Ultimo elegivel (100% apostas)
+  var ultimoElegivel=null;
+  for(var ui=sorted.length-1;ui>=0;ui--){
+    var apF=apostas.filter(function(a){return a.participante_id===sorted[ui].id&&jogosFinIds.includes(a.jogo_id);}).length;
+    if(apF===totalFin){ultimoElegivel=sorted[ui].id;break;}
+  }
+  D('rlist').innerHTML=sorted.map(function(p,i){
     var pts=getPts(p.id),cr=cravadas(p.id),pct=Math.round(pts/maxPts*100);
-    return '<div class="ri"><div class="rp '+pc(i)+'">'+(medal(i))+'</div><div class="rav">'+initials(p.nome)+'</div><div style="flex:1"><div class="rname">'+p.nome+'</div><div class="rsub">'+cr+' cravada'+(cr!==1?'s':'')+'</div></div><div class="rbar"><div class="rbarv" style="width:'+pct+'%"></div></div><div class="rpts">'+pts+' pts</div></div>';
+    var isMe=user&&p.id===user.id;
+    var apFeitas=apostas.filter(function(a){return a.participante_id===p.id&&jogosFinIds.includes(a.jogo_id);}).length;
+    var semAp=totalFin-apFeitas;
+    var semApHtml=semAp>0?'<span style="color:var(--danger);font-size:10px"> · '+semAp+' jogo'+(semAp!==1?'s':'')+' sem aposta</span>':'';
+    var ultHtml=p.id===ultimoElegivel?'<span style="font-size:10px;padding:1px 5px;border-radius:8px;background:rgba(255,215,0,0.15);color:var(--gold);margin-left:4px">🎁 lanterna elegível</span>':'';
+    return '<div class="ri" style="'+(isMe?'background:rgba(0,200,120,0.07);border-radius:8px;padding:4px 6px;margin:0 -6px;':'')+'"><div class="rp '+pc(i)+'">'+(medal(i))+'</div><div class="rav" style="'+(isMe?'border-color:var(--green);border-width:2px;':'')+'">'+initials(p.nome)+'</div><div style="flex:1"><div class="rname">'+p.nome+(isMe?' 👤':'')+'</div><div class="rsub">'+cr+' cravada'+(cr!==1?'s':'')+semApHtml+ultHtml+'</div></div><div class="rbar"><div class="rbarv" style="width:'+pct+'%"></div></div><div class="rpts">'+pts+' pts</div></div>';
   }).join('');
 }
 
