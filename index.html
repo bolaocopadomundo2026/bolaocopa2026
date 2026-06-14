@@ -132,7 +132,7 @@ tr:last-child td{border-bottom:none}
       <button class="nb" id="nadm" style="display:none" onclick="pg('admin',this)">Admin</button>
     </nav></div>
   </header>
-  <div id="countdown-bar" style="display:none;background:var(--gdim);border-bottom:1px solid var(--border);padding:6px 1rem;text-align:center;font-size:13px;color:var(--green)"></div>
+  <div id="countdown-bar" style="display:none;background:var(--gdim);border-bottom:1px solid var(--border);padding:6px 1rem;text-align:center;font-size:13px;color:var(--green);cursor:pointer" onclick="pg('apostas',document.querySelector('.nb[onclick*=apostas]'))"></div>
   <main>
     <div id="pg-ranking" class="page on"><div class="sh">Classificacao</div><div id="prog-bolao"></div><div class="metrics" id="mets"></div><div class="card" id="rlist"></div></div>
     <div id="pg-jogos" class="page"><div class="sh">Placares Oficiais</div>
