@@ -1251,7 +1251,17 @@ async function renderCuriosidades(){
     var maxIg=Math.max.apply(null,entries.map(function(e){return e[1];}));
     if(maxIg>maxIgual){maxIgual=maxIg;var placar=entries.find(function(e){return e[1]===maxIg;})[0];jogoIgual={j:j,placar:placar};}
   });
-  if(jogoIgual)html+=statRow('🤝','Jogo com mais palpites iguais','Jogo '+jogoIgual.j.id+' ('+jogoIgual.j.time_a+' x '+jogoIgual.j.time_b+') — '+maxIgual+' apostaram '+jogoIgual.placar);
+  if(jogoIgual){
+    var topIguais=[];
+    jogosComRes.forEach(function(j){
+      var apJ2=apostas.filter(function(a){return a.jogo_id===j.id&&a.gols_a!==null;});
+      var igMap2={};apJ2.forEach(function(a){var k=a.gols_a+'x'+a.gols_b;igMap2[k]=(igMap2[k]||0)+1;});
+      var entries2=Object.entries(igMap2);if(!entries2.length)return;
+      var maxIg2=Math.max.apply(null,entries2.map(function(e){return e[1];}));
+      if(maxIg2===maxIgual){var placar2=entries2.find(function(e){return e[1]===maxIg2;})[0];topIguais.push({j:j,placar:placar2});}
+    });
+    html+=statRow('🤝','Jogo com mais palpites iguais',topIguais.map(function(x){return 'Jogo '+x.j.id+' ('+x.j.time_a+' x '+x.j.time_b+') — '+maxIgual+' apostaram '+x.placar;}).join(' | '));
+  }
 
   // Jogo com mais cravadas
   var cravJogoMap=[];
@@ -1263,7 +1273,10 @@ async function renderCuriosidades(){
   if(cravJogoMap.length){
     var maxCravJ=Math.max.apply(null,cravJogoMap.map(function(e){return e.crav;}));
     var jogoCrav=cravJogoMap.find(function(e){return e.crav===maxCravJ;});
-    if(jogoCrav&&maxCravJ>0)html+=statRow('⚡','Jogo com mais cravadas','Jogo '+jogoCrav.j.id+' ('+jogoCrav.j.time_a+' x '+jogoCrav.j.time_b+' — '+jogoCrav.j.gols_a+'x'+jogoCrav.j.gols_b+') — '+maxCravJ+' cravada'+(maxCravJ!==1?'s':''));
+    if(maxCravJ>0){
+      var topCrav=cravJogoMap.filter(function(e){return e.crav===maxCravJ;});
+      html+=statRow('⚡','Jogo com mais cravadas',topCrav.map(function(e){return 'Jogo '+e.j.id+' ('+e.j.time_a+' x '+e.j.time_b+' — '+e.j.gols_a+'x'+e.j.gols_b+')';}).join(', ')+' — '+maxCravJ+' cravada'+(maxCravJ!==1?'s':''));
+    }
   }
 
   // Jogo mais pontuado (soma total de pts de todos)
@@ -1274,7 +1287,11 @@ async function renderCuriosidades(){
     pontJogoMap.push({j:j,soma:soma,qtd:apJ.length});
   });
   pontJogoMap.sort(function(a,b){return b.soma-a.soma;});
-  if(pontJogoMap.length&&pontJogoMap[0].soma>0)html+=statRow('💰','Jogo mais pontuado','Jogo '+pontJogoMap[0].j.id+' ('+pontJogoMap[0].j.time_a+' x '+pontJogoMap[0].j.time_b+' — '+pontJogoMap[0].j.gols_a+'x'+pontJogoMap[0].j.gols_b+') — '+pontJogoMap[0].soma+' pts distribuídos');
+  if(pontJogoMap.length&&pontJogoMap[0].soma>0){
+    var maxPontSoma=pontJogoMap[0].soma;
+    var topPont=pontJogoMap.filter(function(x){return x.soma===maxPontSoma;});
+    html+=statRow('💰','Jogo mais pontuado',topPont.map(function(x){return 'Jogo '+x.j.id+' ('+x.j.time_a+' x '+x.j.time_b+' — '+x.j.gols_a+'x'+x.j.gols_b+')';}).join(', ')+' — '+maxPontSoma+' pts distribuídos');
+  }
 
   // Jogo mais arriscado
   var arrMap=[];
@@ -1298,7 +1315,12 @@ async function renderCuriosidades(){
     if(pct>50)zebraMap.push({j:j,pct:pct});
   });
   zebraMap.sort(function(a,b){return b.pct-a.pct;});
-  if(zebraMap.length)html+=statRow('🦓','Maior zebra','Jogo '+zebraMap[0].j.id+' ('+zebraMap[0].j.time_a+' x '+zebraMap[0].j.time_b+') — '+zebraMap[0].pct+'% errou o vencedor');
+  if(zebraMap.length){
+    var maxZebraPct=zebraMap[0].pct;
+    var topZebras=zebraMap.filter(function(z){return z.pct===maxZebraPct;});
+    var zebraStr=topZebras.map(function(z){return 'Jogo '+z.j.id+' ('+z.j.time_a+' x '+z.j.time_b+')';}).join(', ');
+    html+=statRow('🦓','Maior zebra',zebraStr+' — '+maxZebraPct+'% errou o vencedor');
+  }
 
   // Jogo mais dificil
   var difMap=[];
@@ -1309,10 +1331,18 @@ async function renderCuriosidades(){
     difMap.push({j:j,pct:Math.round(pont/apJ.length*100)});
   });
   difMap.sort(function(a,b){return a.pct-b.pct;});
-  if(difMap.length)html+=statRow('🤯','Jogo mais difícil','Jogo '+difMap[0].j.id+' ('+difMap[0].j.time_a+' x '+difMap[0].j.time_b+') — só '+difMap[0].pct+'% pontuou ('+difMap[0].j.gols_a+'x'+difMap[0].j.gols_b+')');
+  if(difMap.length){
+    var minDifPct=difMap[0].pct;
+    var topDif=difMap.filter(function(x){return x.pct===minDifPct;});
+    html+=statRow('🤯','Jogo mais difícil',topDif.map(function(x){return 'Jogo '+x.j.id+' ('+x.j.time_a+' x '+x.j.time_b+' — '+x.j.gols_a+'x'+x.j.gols_b+')';}).join(', ')+' — só '+minDifPct+'% pontuou');
+  }
 
   difMap.sort(function(a,b){return b.pct-a.pct;});
-  if(difMap.length)html+=statRow('😴','Jogo mais fácil','Jogo '+difMap[0].j.id+' ('+difMap[0].j.time_a+' x '+difMap[0].j.time_b+') — '+difMap[0].pct+'% pontuou ('+difMap[0].j.gols_a+'x'+difMap[0].j.gols_b+')');
+  if(difMap.length){
+    var maxFacPct=difMap[0].pct;
+    var topFac=difMap.filter(function(x){return x.pct===maxFacPct;});
+    html+=statRow('😴','Jogo mais fácil',topFac.map(function(x){return 'Jogo '+x.j.id+' ('+x.j.time_a+' x '+x.j.time_b+' — '+x.j.gols_a+'x'+x.j.gols_b+')';}).join(', ')+' — '+maxFacPct+'% pontuou');
+  }
 
   html+='</div>';
   D('curarea').innerHTML=html;
