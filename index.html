@@ -538,7 +538,7 @@ async function saveAp(jid){
   var {error}=await sb.from('apostas').upsert({participante_id:user.id,jogo_id:jid,gols_a:Number(ga),gols_b:Number(gb),resposta_bonus:bns},{onConflict:'participante_id,jogo_id'});
   if(error){toast('Erro: '+error.message);return;}
   if(window._ed)delete window._ed[jid];
-  toast('✅ Palpite salvo!');await load(true);renderApostas();
+  toast('✅ Palpite salvo!');await load(true);await new Promise(r=>setTimeout(r,300));renderApostas();
 }
 
 async function renderEspeciais(){
