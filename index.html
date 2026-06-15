@@ -430,13 +430,6 @@ async function renderRanking(){
     var semAp=totalFin-apFeitas;
     var semApHtml=semAp>0?'<span style="color:var(--danger);font-size:10px"> · '+semAp+' jogo'+(semAp!==1?'s':'')+' sem aposta</span>':'';
     var ultHtml=p.id===ultimoElegivel?'<span style="font-size:10px;padding:1px 5px;border-radius:8px;background:rgba(255,215,0,0.15);color:var(--gold);margin-left:4px">🎁 lanterna elegível</span>':'';
-    especiais.filter(function(e){return e.participante_id===p.id&&e.correto;}).forEach(function(e){var d=ESPS.find(function(x){return x.key===e.categoria;});if(d)ptsEspP+=d.pts;});
-    var ptsGrpP=grupos.filter(function(g){return g.participante_id===p.id&&g.correto;}).length*50;
-    var catHtml='<div style="font-size:10px;color:var(--muted);margin-top:2px">⚽ '+ptsPlacar+'pts';
-    if(ptsBonus>0)catHtml+=' · ❓ '+ptsBonus+'pts';
-    if(ptsEspP>0)catHtml+=' · ⭐ '+ptsEspP+'pts';
-    if(ptsGrpP>0)catHtml+=' · 🔠 '+ptsGrpP+'pts';
-    catHtml+='</div>';
     return '<div class="ri" style="'+(isMe?'background:rgba(0,200,120,0.07);border-radius:8px;padding:4px 6px;margin:0 -6px;':'')+'"><div class="rp '+pc(i)+'">'+(medal(i))+'</div><div class="rav" style="'+(isMe?'border-color:var(--green);border-width:2px;':'')+'">'+initials(p.nome)+'</div><div style="flex:1"><div class="rname">'+p.nome+(isMe?' 👤':'')+'</div><div class="rsub">'+cr+' cravada'+(cr!==1?'s':'')+semApHtml+ultHtml+'</div><div class="rbar"><div class="rbarv" style="width:'+pct+'%"></div></div><div class="rpts">'+pts+' pts</div></div>';
   }).join('');
 }
