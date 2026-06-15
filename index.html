@@ -1065,6 +1065,18 @@ async function renderCuriosidades(){
   var maisCrav=parts.filter(function(p){return cravMap[p.id]===maxCrav;}).map(function(p){return p.nome;}).join(', ');
   html+=statRow('🎯','Quem mais cravou',maisCrav+' — '+maxCrav+' cravada'+(maxCrav!==1?'s':''));
 
+  // Maior aproveitamento (pts por jogo apostado)
+  var aprovMap={};
+  parts.forEach(function(p){
+    var apP=apostas.filter(function(a){return a.participante_id===p.id&&jogosComResIds.includes(a.jogo_id);});
+    if(!apP.length){aprovMap[p.id]=0;return;}
+    var tot=apP.reduce(function(s,a){var j=jogos.find(function(x){return x.id===a.jogo_id;});return s+(j?calcPts(a.gols_a,a.gols_b,j.gols_a,j.gols_b,j.dobro):0);},0);
+    aprovMap[p.id]=Math.round(tot/apP.length*10)/10;
+  });
+  var maxAprov=Math.max.apply(null,Object.values(aprovMap));
+  var maisAprov=parts.filter(function(p){return aprovMap[p.id]===maxAprov&&maxAprov>0;}).map(function(p){return p.nome;}).join(', ');
+  if(maxAprov>0)html+=statRow('📈','Maior aproveitamento',maisAprov+' — média de '+maxAprov+' pts por jogo');
+
   // Mais consistente
   var consMap={};
   parts.forEach(function(p){
@@ -1097,31 +1109,85 @@ async function renderCuriosidades(){
   var maisAz=parts.filter(function(p){return azaradoMap[p.id]===maxAz&&maxAz>0;}).map(function(p){return p.nome;}).join(', ');
   if(maxAz>0)html+=statRow('🥶','Azarado',maisAz+' — errou por 1 gol em '+maxAz+' jogo'+(maxAz!==1?'s':''));
 
-  // Mais faceiro - maior media de gols apostados
+  // Mais faceiro
   var faceiroMap={};
   parts.forEach(function(p){
     var apP=apostas.filter(function(a){return a.participante_id===p.id&&a.gols_a!==null&&jogosComResIds.includes(a.jogo_id);});
     if(!apP.length){faceiroMap[p.id]=0;return;}
-    var total=apP.reduce(function(s,a){return s+Number(a.gols_a)+Number(a.gols_b);},0);
-    faceiroMap[p.id]=Math.round(total/apP.length*10)/10;
+    faceiroMap[p.id]=Math.round(apP.reduce(function(s,a){return s+Number(a.gols_a)+Number(a.gols_b);},0)/apP.length*10)/10;
   });
   var maxFac=Math.max.apply(null,Object.values(faceiroMap));
   var maisFac=parts.filter(function(p){return faceiroMap[p.id]===maxFac&&maxFac>0;}).map(function(p){return p.nome;}).join(', ');
   if(maxFac>0)html+=statRow('😄','Mais faceiro',maisFac+' — média de '+maxFac+' gols por jogo apostado');
 
-  // Mais retranqueiro - menor media de gols apostados
+  // Mais retranqueiro
   var retMap={};
   parts.forEach(function(p){
     var apP=apostas.filter(function(a){return a.participante_id===p.id&&a.gols_a!==null&&jogosComResIds.includes(a.jogo_id);});
     if(!apP.length){retMap[p.id]=99;return;}
-    var total=apP.reduce(function(s,a){return s+Number(a.gols_a)+Number(a.gols_b);},0);
-    retMap[p.id]=Math.round(total/apP.length*10)/10;
+    retMap[p.id]=Math.round(apP.reduce(function(s,a){return s+Number(a.gols_a)+Number(a.gols_b);},0)/apP.length*10)/10;
   });
   var minRet=Math.min.apply(null,parts.filter(function(p){return retMap[p.id]<99;}).map(function(p){return retMap[p.id];}));
   var maisRet=parts.filter(function(p){return retMap[p.id]===minRet;}).map(function(p){return p.nome;}).join(', ');
   if(minRet<99)html+=statRow('😤','Mais retranqueiro',maisRet+' — média de '+minRet+' gols por jogo apostado');
 
-  // Sequencia atual
+  // Rei do empate
+  var empMap={};parts.forEach(function(p){empMap[p.id]=0;});
+  apostas.forEach(function(a){
+    var j=jogos.find(function(x){return x.id===a.jogo_id;});
+    if(!j||j.gols_a===null)return;
+    if(Number(a.gols_a)===Number(a.gols_b)&&Number(j.gols_a)===Number(j.gols_b))
+      empMap[a.participante_id]=(empMap[a.participante_id]||0)+1;
+  });
+  var maxEmp=Math.max.apply(null,Object.values(empMap));
+  var maisEmp=parts.filter(function(p){return empMap[p.id]===maxEmp&&maxEmp>0;}).map(function(p){return p.nome;}).join(', ');
+  if(maxEmp>0)html+=statRow('🤝','Rei do empate',maisEmp+' — acertou '+maxEmp+' empate'+(maxEmp!==1?'s':''));
+
+  // Rei do placar mais apostado (dinamico)
+  var placMapRei={};
+  apostas.forEach(function(a){
+    if(a.gols_a===null||!jogosComResIds.includes(a.jogo_id))return;
+    var k=a.gols_a+'x'+a.gols_b;placMapRei[k]=(placMapRei[k]||0)+1;
+  });
+  if(Object.keys(placMapRei).length){
+    var maxPlacRei=Math.max.apply(null,Object.values(placMapRei));
+    var placRei=Object.entries(placMapRei).find(function(e){return e[1]===maxPlacRei;})[0];
+    var reiMap={};parts.forEach(function(p){reiMap[p.id]=0;});
+    apostas.forEach(function(a){
+      var j=jogos.find(function(x){return x.id===a.jogo_id;});
+      if(!j||j.gols_a===null)return;
+      if(a.gols_a+'x'+a.gols_b===placRei&&Number(j.gols_a)===Number(a.gols_a)&&Number(j.gols_b)===Number(a.gols_b))
+        reiMap[a.participante_id]=(reiMap[a.participante_id]||0)+1;
+    });
+    var maxRei=Math.max.apply(null,Object.values(reiMap));
+    var maisRei=parts.filter(function(p){return reiMap[p.id]===maxRei&&maxRei>0;}).map(function(p){return p.nome;}).join(', ');
+    if(maxRei>0)html+=statRow('👑','Rei do '+placRei,maisRei+' — acertou esse placar '+maxRei+' vez'+(maxRei!==1?'es':''));
+  }
+
+  // Melhor palpiteiro de bonus
+  var bonusMap={};parts.forEach(function(p){bonusMap[p.id]={acertos:0,total:0};});
+  apostas.forEach(function(a){
+    var j=jogos.find(function(x){return x.id===a.jogo_id;});
+    if(!j||!j.pergunta_bonus||!a.resposta_bonus)return;
+    if(!prazoOk(j.prazo)){bonusMap[a.participante_id].total++;if(a.bonus_correto)bonusMap[a.participante_id].acertos++;}
+  });
+  var bonusList=parts.filter(function(p){return bonusMap[p.id].total>0;}).map(function(p){return {nome:p.nome,pct:Math.round(bonusMap[p.id].acertos/bonusMap[p.id].total*100),acertos:bonusMap[p.id].acertos,total:bonusMap[p.id].total};});
+  bonusList.sort(function(a,b){return b.pct-a.pct||b.acertos-a.acertos;});
+  if(bonusList.length&&bonusList[0].acertos>0)html+=statRow('🧠','Melhor palpiteiro de bônus',bonusList[0].nome+' — '+bonusList[0].acertos+'/'+bonusList[0].total+' acertos ('+bonusList[0].pct+'%)');
+
+  // Apostador mais unico
+  var unicoMap={};parts.forEach(function(p){unicoMap[p.id]=0;});
+  jogosComRes.forEach(function(j){
+    var apJ=apostas.filter(function(a){return a.jogo_id===j.id&&a.gols_a!==null;});
+    var placCount={};
+    apJ.forEach(function(a){var k=a.gols_a+'x'+a.gols_b;placCount[k]=(placCount[k]||0)+1;});
+    apJ.forEach(function(a){var k=a.gols_a+'x'+a.gols_b;if(placCount[k]===1)unicoMap[a.participante_id]=(unicoMap[a.participante_id]||0)+1;});
+  });
+  var maxUnico=Math.max.apply(null,Object.values(unicoMap));
+  var maisUnico=parts.filter(function(p){return unicoMap[p.id]===maxUnico&&maxUnico>0;}).map(function(p){return p.nome;}).join(', ');
+  if(maxUnico>0)html+=statRow('🎰','Apostador mais único',maisUnico+' — '+maxUnico+' aposta'+(maxUnico!==1?'s':'')+' que só ele(a) fez');
+
+  // Sequencia
   var seqMap={};
   parts.forEach(function(p){
     var jogosOrd=jogosComRes.slice().sort(function(a,b){return a.id-b.id;});
@@ -1152,46 +1218,6 @@ async function renderCuriosidades(){
     if(top3Alta.length)html+=statRow('📈','Em alta (últimos '+ultimos3.length+' jogos)',top3Alta.map(function(p){return p.nome+' ('+p.total+'pts)';}).join(', '));
     if(top3Baixa.length)html+=statRow('📉','Em baixa (últimos '+ultimos3.length+' jogos)',top3Baixa.map(function(p){return p.nome+' ('+p.total+'pts)';}).join(', '));
   }
-
-  // Apostador mais unico
-  var unicoMap={};parts.forEach(function(p){unicoMap[p.id]=0;});
-  jogosComRes.forEach(function(j){
-    var apJ=apostas.filter(function(a){return a.jogo_id===j.id&&a.gols_a!==null;});
-    var placCount={};
-    apJ.forEach(function(a){var k=a.gols_a+'x'+a.gols_b;placCount[k]=(placCount[k]||0)+1;});
-    apJ.forEach(function(a){var k=a.gols_a+'x'+a.gols_b;if(placCount[k]===1)unicoMap[a.participante_id]=(unicoMap[a.participante_id]||0)+1;});
-  });
-  var maxUnico=Math.max.apply(null,Object.values(unicoMap));
-  var maisUnico=parts.filter(function(p){return unicoMap[p.id]===maxUnico&&maxUnico>0;}).map(function(p){return p.nome;}).join(', ');
-  if(maxUnico>0)html+=statRow('🎰','Apostador mais único',maisUnico+' — '+maxUnico+' aposta'+(maxUnico!==1?'s':'')+' que só ele(a) fez');
-
-  // Rei do empate - quem mais apostou empate e acertou
-  var empMap={};parts.forEach(function(p){empMap[p.id]=0;});
-  apostas.forEach(function(a){
-    var j=jogos.find(function(x){return x.id===a.jogo_id;});
-    if(!j||j.gols_a===null)return;
-    if(Number(a.gols_a)===Number(a.gols_b)&&Number(j.gols_a)===Number(j.gols_b))
-      empMap[a.participante_id]=(empMap[a.participante_id]||0)+1;
-  });
-  var maxEmp=Math.max.apply(null,Object.values(empMap));
-  var maisEmp=parts.filter(function(p){return empMap[p.id]===maxEmp&&maxEmp>0;}).map(function(p){return p.nome;}).join(', ');
-  if(maxEmp>0)html+=statRow('🤝','Rei do empate',maisEmp+' — acertou '+maxEmp+' empate'+(maxEmp!==1?'s':''));
-
-  // Melhor palpiteiro de bonus - maior % de acertos nas perguntas bonus
-  var bonusMap={};parts.forEach(function(p){bonusMap[p.id]={acertos:0,total:0};});
-  apostas.forEach(function(a){
-    var j=jogos.find(function(x){return x.id===a.jogo_id;});
-    if(!j||!j.pergunta_bonus||!a.resposta_bonus)return;
-    if(!prazoOk(j.prazo)){
-      bonusMap[a.participante_id].total++;
-      if(a.bonus_correto)bonusMap[a.participante_id].acertos++;
-    }
-  });
-  var bonusList=parts.filter(function(p){return bonusMap[p.id].total>0;}).map(function(p){
-    return {nome:p.nome,pct:Math.round(bonusMap[p.id].acertos/bonusMap[p.id].total*100),acertos:bonusMap[p.id].acertos,total:bonusMap[p.id].total};
-  });
-  bonusList.sort(function(a,b){return b.pct-a.pct||b.acertos-a.acertos;});
-  if(bonusList.length&&bonusList[0].acertos>0)html+=statRow('🧠','Melhor palpiteiro de bônus',bonusList[0].nome+' — '+bonusList[0].acertos+'/'+bonusList[0].total+' acertos ('+bonusList[0].pct+'%)');
 
   html+='</div>';
 
@@ -1234,18 +1260,17 @@ async function renderCuriosidades(){
     if(jogoCrav&&maxCravJ>0)html+=statRow('⚡','Jogo com mais cravadas','Jogo '+jogoCrav.j.id+' ('+jogoCrav.j.time_a+' x '+jogoCrav.j.time_b+' — '+jogoCrav.j.gols_a+'x'+jogoCrav.j.gols_b+') — '+maxCravJ+' cravada'+(maxCravJ!==1?'s':''));
   }
 
-  // Jogo mais polêmico
-  var polemMap=[];
+  // Jogo mais pontuado (soma total de pts de todos)
+  var pontJogoMap=[];
   jogosComRes.forEach(function(j){
     var apJ=apostas.filter(function(a){return a.jogo_id===j.id&&a.gols_a!==null;});
-    if(apJ.length<3)return;
-    var unicos=new Set(apJ.map(function(a){return a.gols_a+'x'+a.gols_b;})).size;
-    polemMap.push({j:j,unicos:unicos,total:apJ.length});
+    var soma=apJ.reduce(function(s,a){return s+calcPts(a.gols_a,a.gols_b,j.gols_a,j.gols_b,j.dobro);},0);
+    pontJogoMap.push({j:j,soma:soma,qtd:apJ.length});
   });
-  polemMap.sort(function(a,b){return b.unicos-a.unicos;});
-  if(polemMap.length)html+=statRow('🔴','Jogo mais polêmico','Jogo '+polemMap[0].j.id+' ('+polemMap[0].j.time_a+' x '+polemMap[0].j.time_b+') — '+polemMap[0].unicos+' placares diferentes entre '+polemMap[0].total+' apostas');
+  pontJogoMap.sort(function(a,b){return b.soma-a.soma;});
+  if(pontJogoMap.length&&pontJogoMap[0].soma>0)html+=statRow('💰','Jogo mais pontuado','Jogo '+pontJogoMap[0].j.id+' ('+pontJogoMap[0].j.time_a+' x '+pontJogoMap[0].j.time_b+' — '+pontJogoMap[0].j.gols_a+'x'+pontJogoMap[0].j.gols_b+') — '+pontJogoMap[0].soma+' pts distribuídos');
 
-  // Jogo mais arriscado - maior variedade relativa
+  // Jogo mais arriscado
   var arrMap=[];
   jogosComRes.forEach(function(j){
     var apJ=apostas.filter(function(a){return a.jogo_id===j.id&&a.gols_a!==null;});
@@ -1256,18 +1281,15 @@ async function renderCuriosidades(){
   arrMap.sort(function(a,b){return b.pct-a.pct;});
   if(arrMap.length)html+=statRow('🎰','Jogo mais arriscado','Jogo '+arrMap[0].j.id+' ('+arrMap[0].j.time_a+' x '+arrMap[0].j.time_b+') — '+arrMap[0].pct+'% de placares diferentes ('+arrMap[0].unicos+' de '+arrMap[0].total+' apostas)');
 
-  // Maior zebra - jogo onde mais gente errou o vencedor
+  // Maior zebra
   var zebraMap=[];
   jogosComRes.forEach(function(j){
     var apJ=apostas.filter(function(a){return a.jogo_id===j.id&&a.gols_a!==null;});
     if(apJ.length<3)return;
     var winReal=Number(j.gols_a)>Number(j.gols_b)?'A':Number(j.gols_a)<Number(j.gols_b)?'B':'E';
-    var errouVenc=apJ.filter(function(a){
-      var w=Number(a.gols_a)>Number(a.gols_b)?'A':Number(a.gols_a)<Number(a.gols_b)?'B':'E';
-      return w!==winReal;
-    }).length;
+    var errouVenc=apJ.filter(function(a){var w=Number(a.gols_a)>Number(a.gols_b)?'A':Number(a.gols_a)<Number(a.gols_b)?'B':'E';return w!==winReal;}).length;
     var pct=Math.round(errouVenc/apJ.length*100);
-    if(pct>50)zebraMap.push({j:j,pct:pct,total:apJ.length});
+    if(pct>50)zebraMap.push({j:j,pct:pct});
   });
   zebraMap.sort(function(a,b){return b.pct-a.pct;});
   if(zebraMap.length)html+=statRow('🦓','Maior zebra','Jogo '+zebraMap[0].j.id+' ('+zebraMap[0].j.time_a+' x '+zebraMap[0].j.time_b+') — '+zebraMap[0].pct+'% errou o vencedor');
