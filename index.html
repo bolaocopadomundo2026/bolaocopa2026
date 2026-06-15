@@ -232,13 +232,22 @@ async function fetchAllGrupos(){
 var _lastLoad=0;
 async function load(force){
   var now=Date.now();
-  var [j,p,a,e]=await Promise.all([
+  var [j,p,e]=await Promise.all([
     sb.from('jogos').select('*').order('id'),
     sb.from('participantes').select('id,nome').order('nome'),
-    sb.from('apostas').select('*').limit(10000),
     sb.from('especiais').select('*')
   ]);
-  jogos=j.data||[];parts=p.data||[];apostas=a.data||[];especiais=e.data||[];
+  jogos=j.data||[];parts=p.data||[];especiais=e.data||[];
+  // Busca apostas com paginacao para superar limite de 1000
+  var allApostas=[],fromA=0;
+  while(true){
+    var resA=await sb.from('apostas').select('*').range(fromA,fromA+999);
+    if(resA.error||!resA.data||!resA.data.length)break;
+    allApostas=allApostas.concat(resA.data);
+    if(resA.data.length<1000)break;
+    fromA+=1000;
+  }
+  apostas=allApostas;
   if(user&&!['__guest__','__adm__'].includes(user.id)){
     var g=await sb.from('palpites_grupos').select('id,participante_id,grupo,posicao,selecao,correto').eq('participante_id',user.id);
     grupos=g.data||[];
