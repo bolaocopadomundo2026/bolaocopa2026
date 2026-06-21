@@ -1357,10 +1357,17 @@ async function renderCuriosidades(){
     html+=statRow('🦓','Maior zebra',zebraStr+' — '+maxZebraPct+'% errou o vencedor');
   }
 
-  difMap.sort(function(a,b){return b.pct-a.pct;});
-  if(difMap.length){
-    var maxFacPct=difMap[0].pct;
-    var topFac=difMap.filter(function(x){return x.pct===maxFacPct;});
+  var facMap=[];
+  jogosComRes.forEach(function(j){
+    var apJ=apostas.filter(function(a){return a.jogo_id===j.id&&a.gols_a!==null;});
+    if(apJ.length<2)return;
+    var pont=apJ.filter(function(a){return calcPts(a.gols_a,a.gols_b,j.gols_a,j.gols_b,false)>0;}).length;
+    facMap.push({j:j,pct:Math.round(pont/apJ.length*100)});
+  });
+  facMap.sort(function(a,b){return b.pct-a.pct;});
+  if(facMap.length){
+    var maxFacPct=facMap[0].pct;
+    var topFac=facMap.filter(function(x){return x.pct===maxFacPct;});
     html+=statRow('😴','Jogo mais fácil',topFac.map(function(x){return 'Jogo '+x.j.id+' ('+x.j.time_a+' x '+x.j.time_b+' — '+x.j.gols_a+'x'+x.j.gols_b+')';}).join(', ')+' — '+maxFacPct+'% pontuou');
   }
 
