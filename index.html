@@ -248,11 +248,16 @@ async function load(force){
     fromA+=1000;
   }
   apostas=allApostas;
+  // Busca TODOS os grupos com correto=true para o ranking funcionar (leve, poucos registros corretos)
+  var gAll=await sb.from('palpites_grupos').select('id,participante_id,grupo,posicao,selecao,correto').eq('correto',true);
+  grupos=gAll.data||[];
+  // Adiciona os grupos do proprio usuario (mesmo sem correto) para a aba Apostas Grupos funcionar
   if(user&&!['__guest__','__adm__'].includes(user.id)){
     var g=await sb.from('palpites_grupos').select('id,participante_id,grupo,posicao,selecao,correto').eq('participante_id',user.id);
-    grupos=g.data||[];
-  } else {
-    grupos=[];
+    var meusGrupos=g.data||[];
+    meusGrupos.forEach(function(mg){
+      if(!grupos.find(function(x){return x.id===mg.id;})) grupos.push(mg);
+    });
   }
   var r=await sb.from('regras').select('prazo_especiais,prazo_grupos,oficial_especiais,oficial_grupos').eq('id',1).single();
   if(r.data){
