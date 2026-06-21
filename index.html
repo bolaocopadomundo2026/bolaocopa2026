@@ -784,7 +784,12 @@ async function renderBonusPub(){
     html+='<div class="div"><div class="divl"></div><span class="divt">Em aberto</span><div class="divl"></div></div>';
     jgA.forEach(j=>{
       var fechado=!prazoOk(j.prazo);
-      html+='<div class="bpc"><div style="font-size:11px;color:var(--muted);margin-bottom:4px">Jogo '+j.id+' — '+j.time_a+' x '+j.time_b+'</div><div style="font-size:13px;color:var(--amber);font-weight:500">'+j.pergunta_bonus+'</div><div style="font-size:12px;color:var(--muted);margin-top:4px">'+(fechado?'⏳ Aguardando resposta oficial':'🔒 Respostas visiveis apos o prazo')+'</div></div>';
+      if(!fechado){
+        html+='<div class="bpc"><div style="font-size:11px;color:var(--muted);margin-bottom:4px">Jogo '+j.id+' — '+j.time_a+' x '+j.time_b+'</div><div style="font-size:13px;color:var(--amber);font-weight:500">'+j.pergunta_bonus+'</div><div style="font-size:12px;color:var(--muted);margin-top:4px">🔒 Respostas visiveis apos o prazo</div></div>';
+      } else {
+        var apJ2=apostas.filter(a=>a.jogo_id===j.id&&a.resposta_bonus);
+        html+='<div class="bpc"><div style="font-size:11px;color:var(--muted);margin-bottom:4px">Jogo '+j.id+' — '+j.time_a+' x '+j.time_b+'</div><div style="font-size:13px;color:var(--amber);font-weight:500;margin-bottom:6px">'+j.pergunta_bonus+'</div><div style="font-size:12px;color:var(--muted);margin-bottom:8px">⏳ Aguardando resposta oficial</div><div style="display:flex;flex-wrap:wrap;gap:4px">'+apJ2.map(a=>{var pt=parts.find(p=>p.id===a.participante_id);return '<span class="bc">'+(pt?pt.nome.split(' ')[0]:'?')+': '+a.resposta_bonus+'</span>';}).join('')+(apJ2.length?'':'<span style="color:var(--muted);font-size:12px">Sem respostas</span>')+'</div></div>';
+      }
     });
   }
   if(jgF.length){
