@@ -254,8 +254,12 @@ async function load(force){
   } else {
     grupos=[];
   }
-  var r=await sb.from('regras').select('prazo_especiais,prazo_grupos').eq('id',1).single();
-  if(r.data){prazos={esp:r.data.prazo_especiais,grp:r.data.prazo_grupos};}
+  var r=await sb.from('regras').select('prazo_especiais,prazo_grupos,oficial_especiais,oficial_grupos').eq('id',1).single();
+  if(r.data){
+    prazos={esp:r.data.prazo_especiais,grp:r.data.prazo_grupos};
+    oficialEsp=r.data.oficial_especiais?JSON.parse(r.data.oficial_especiais):{};
+    oficialGrp=r.data.oficial_grupos?JSON.parse(r.data.oficial_grupos):{};
+  }
 }
 
 function calcPts(ga,gb,ra,rb,dob){
@@ -556,9 +560,11 @@ async function renderEspeciais(){
   var html='<div class="'+barCls+'">'+barTxt+'</div><div class="eg">';
   ESPS.forEach(def=>{
     var e=myEsp[def.key]||{};
+    var oficial=oficialEsp[def.key];
     html+='<div class="ec"><div style="font-size:13px;font-weight:500;margin-bottom:6px;display:flex;align-items:center;gap:6px;flex-wrap:wrap">'+def.label+' <span style="font-size:11px;color:var(--gold)">'+def.pts+'pts</span>'+(e.correto?'<span class="pb">✓ Acertou!</span>':'')+'</div>'+
       '<input type="text" placeholder="Seu palpite" value="'+(e.resposta||'')+'" id="esp'+def.key+'"'+(fechado?' disabled':'')+'>'+
       (!fechado?'<button class="btn pri sm" style="margin-top:6px;width:100%" data-key="'+def.key+'" onclick="saveEsp(this.dataset.key)">💾 Salvar</button>':'<div style="font-size:11px;color:var(--danger);margin-top:4px">🔒 Prazo encerrado</div>')+
+      (oficial?'<div style="font-size:12px;color:var(--green);margin-top:6px;font-weight:600">✅ Oficial: '+oficial+'</div>':'')+
       '</div>';
   });
   html+='</div>';
@@ -617,11 +623,13 @@ async function renderGrupos(){
     html+='<div class="gcard"><div class="gtit">Grupo '+gr+'</div>';
     [1,2,3,4].forEach(pos=>{
       var g=myGrp[String(gr)+'-'+String(pos)]||{},val=g.selecao||'';
+      var ofGrp=oficialGrp[gr+'-'+pos];
       html+='<div class="gpr"><span class="gpl">'+pos+'o lugar</span>'+
         '<input type="text" placeholder="Selecao" value="'+val+'" id="gi'+gr+''+pos+'"'+(fechado?' disabled':'')+' style="flex:1;min-width:0">'+
         '<span id="gb'+gr+''+pos+'" style="flex-shrink:0;font-size:11px;padding:2px 6px;border-radius:10px;'+(g.correto?'background:var(--gdim);color:var(--green)':val?'background:var(--bg3);color:var(--muted)':'')+'">'+( g.correto?'OK':val?'pend.':'')+'</span>'+
         (!fechado?'<button class="btn sm" style="flex-shrink:0;padding:3px 8px;font-size:11px" data-gr="'+gr+'" data-pos="'+pos+'" onclick="saveGrp(this.dataset.gr,this.dataset.pos)">OK</button>':'')+
-        '</div>';
+        '</div>'+
+        (ofGrp?'<div style="font-size:10px;color:var(--green);padding-left:48px;margin-top:-4px;margin-bottom:4px">✅ Oficial: '+ofGrp+'</div>':'');
     });
     html+='</div>';
   });
@@ -886,9 +894,19 @@ async function renderAdmEsp(){
   await load();var html='';
   ESPS.forEach(def=>{
     var resp=especiais.filter(e=>e.categoria===def.key).sort((a,b)=>{var pa=parts.find(p=>p.id===a.participante_id),pb=parts.find(p=>p.id===b.participante_id);return (pa?pa.nome:'').localeCompare(pb?pb.nome:'');});
-    html+='<div class="gc"><div class="gh"><span style="font-size:14px;font-weight:500">'+def.label+'</span><span class="pb">'+def.pts+' pts</span></div>'+resp.map(e=>{var pt=parts.find(p=>p.id===e.participante_id);return '<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-top:1px solid var(--border)"><div style="flex:1;font-size:13px">'+(pt?pt.nome:'?')+'</div><div style="font-size:13px;flex:1;color:var(--muted)">'+e.resposta+'</div><button class="btn sm'+(e.correto?' pri':'')+'" data-id="'+e.id+'" data-cor="'+(!e.correto)+'" onclick="togEsp(this.dataset.id,this.dataset.cor)">'+(e.correto?'✓ OK':'Marcar OK')+'</button></div>';}).join('')+(resp.length?'':'<div style="color:var(--muted);font-size:12px;padding-top:6px">Sem palpites.</div>')+'</div>';
+    html+='<div class="gc"><div class="gh"><span style="font-size:14px;font-weight:500">'+def.label+'</span><span class="pb">'+def.pts+' pts</span></div>';
+    html+='<div class="row" style="margin-bottom:.5rem"><div class="grow"><input type="text" placeholder="Resposta oficial" value="'+(oficialEsp[def.key]||'')+'" id="ofesp'+def.key+'"></div><button class="btn pri sm" data-key="'+def.key+'" onclick="saveOficialEsp(this.dataset.key)">📢 Publicar</button></div>';
+    html+=resp.map(e=>{var pt=parts.find(p=>p.id===e.participante_id);return '<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-top:1px solid var(--border)"><div style="flex:1;font-size:13px">'+(pt?pt.nome:'?')+'</div><div style="font-size:13px;flex:1;color:var(--muted)">'+e.resposta+'</div><button class="btn sm'+(e.correto?' pri':'')+'" data-id="'+e.id+'" data-cor="'+(!e.correto)+'" onclick="togEsp(this.dataset.id,this.dataset.cor)">'+(e.correto?'✓ OK':'Marcar OK')+'</button></div>';}).join('')+(resp.length?'':'<div style="color:var(--muted);font-size:12px;padding-top:6px">Sem palpites.</div>')+'</div>';
   });
   D('espAdmArea').innerHTML=html;
+}
+
+async function saveOficialEsp(key){
+  var val=D('ofesp'+key)?D('ofesp'+key).value.trim():'';
+  oficialEsp[key]=val;
+  var {error}=await sb.from('regras').upsert({id:1,oficial_especiais:JSON.stringify(oficialEsp)},{onConflict:'id'});
+  if(error){toast('Erro: '+error.message);return;}
+  toast('📢 Resposta oficial publicada!');
 }
 
 async function togEsp(eid,correto){
@@ -905,7 +923,9 @@ async function renderAdmGrupos(){
     html+='<div class="gc"><div style="font-family:\'Barlow Condensed\',sans-serif;font-size:18px;font-weight:700;color:var(--green);margin-bottom:.75rem">Grupo '+gr+'</div>';
     [1,2,3,4].forEach(pos=>{
       var pPos=pGr.filter(g=>Number(g.posicao)===Number(pos)).sort((a,b)=>{var pa=parts.find(p=>p.id===a.participante_id),pb=parts.find(p=>p.id===b.participante_id);return (pa?pa.nome:'').localeCompare(pb?pb.nome:'');});
+      var ofKey=gr+'-'+pos;
       html+='<div style="margin-bottom:.75rem"><div style="font-size:12px;color:var(--muted);margin-bottom:4px">'+pos+'o lugar</div>';
+      html+='<div class="row" style="margin-bottom:.4rem"><div class="grow"><input type="text" placeholder="Selecao oficial" value="'+(oficialGrp[ofKey]||'')+'" id="ofgrp'+ofKey+'" style="font-size:12px;padding:5px 8px"></div><button class="btn sm" data-key="'+ofKey+'" onclick="saveOficialGrp(this.dataset.key)">📢</button></div>';
       pPos.forEach(g=>{var pt=parts.find(p=>p.id===g.participante_id);html+='<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)"><span style="flex:1;font-size:13px">'+(pt?pt.nome:'?')+'</span><span style="flex:1;font-size:13px;color:var(--muted)">'+(g.selecao||'—')+'</span><button class="btn sm'+(g.correto?' pri':'')+'" data-id="'+g.id+'" data-cor="'+(!g.correto)+'" onclick="togGrp(this.dataset.id,this.dataset.cor)">'+(g.correto?'✓ OK':'Marcar OK')+'</button></div>';});
       if(!pPos.length)html+='<div style="color:var(--muted);font-size:12px">Sem palpites.</div>';
       html+='</div>';
@@ -913,6 +933,14 @@ async function renderAdmGrupos(){
     html+='</div>';
   });
   D('grpAdmArea').innerHTML=html;
+}
+
+async function saveOficialGrp(key){
+  var val=D('ofgrp'+key)?D('ofgrp'+key).value.trim():'';
+  oficialGrp[key]=val;
+  var {error}=await sb.from('regras').upsert({id:1,oficial_grupos:JSON.stringify(oficialGrp)},{onConflict:'id'});
+  if(error){toast('Erro: '+error.message);return;}
+  toast('📢 Resposta oficial publicada!');
 }
 
 async function togGrp(gid,correto){
