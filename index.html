@@ -390,7 +390,9 @@ async function renderRanking(){
   var pctEsp=Math.round(ptsEspAtual/ptsEspMax*100);
 
   var ptsGrpMax=2400;
-  var ptsGrpAtual=grupos.filter(function(g){return g.correto;}).length*50;
+  // Conta quantas posicoes (grupo+posicao) ja tem resposta oficial publicada, nao quantos participantes acertaram
+  var posicoesValidadas=Object.keys(oficialGrp).filter(function(k){return oficialGrp[k];}).length;
+  var ptsGrpAtual=posicoesValidadas*50;
   var pctGrp=Math.round(ptsGrpAtual/ptsGrpMax*100);
 
   function barHTML(pct,cor){
