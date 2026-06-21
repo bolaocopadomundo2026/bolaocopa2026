@@ -758,7 +758,15 @@ async function renderPont(viewPid){
     GRUPOS.forEach(gr=>{
       var pGr=myGrpP.filter(g=>String(g.grupo)===gr);if(!pGr.length)return;
       html+='<div style="background:var(--bg3);border-radius:8px;padding:.625rem"><div style="font-size:12px;font-weight:600;color:var(--green);margin-bottom:4px">Grupo '+gr+'</div>';
-      [1,2,3,4].forEach(pos=>{var g=pGr.find(x=>Number(x.posicao)===pos);html+='<div style="font-size:12px;padding:2px 0;display:flex;justify-content:space-between;gap:4px"><span style="color:var(--muted)">'+pos+'o</span><span>'+(g&&g.selecao?g.selecao:'—')+'</span>'+(g&&g.correto?'<span style="color:var(--green)">+50</span>':g?'<span style="color:var(--muted);font-size:10px">pend.</span>':'')+'</div>';});
+      [1,2,3,4].forEach(pos=>{
+        var g=pGr.find(x=>Number(x.posicao)===pos);
+        var temOficial=!!oficialGrp[gr+'-'+pos];
+        var status='';
+        if(g&&g.correto) status='<span style="color:var(--green)">+50</span>';
+        else if(g&&temOficial) status='<span style="color:var(--danger);font-size:11px">✗</span>';
+        else if(g) status='<span style="color:var(--muted);font-size:10px">pend.</span>';
+        html+='<div style="font-size:12px;padding:2px 0;display:flex;justify-content:space-between;gap:4px"><span style="color:var(--muted)">'+pos+'o</span><span>'+(g&&g.selecao?g.selecao:'—')+'</span>'+status+'</div>';
+      });
       html+='</div>';
     });
     html+='</div></div>';
