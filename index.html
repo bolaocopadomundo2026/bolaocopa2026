@@ -1357,13 +1357,6 @@ async function renderCuriosidades(){
     html+=statRow('🦓','Maior zebra',zebraStr+' — '+maxZebraPct+'% errou o vencedor');
   }
 
-  // Melhor em grupos - quem mais acertou selecao+posicao
-  var grpAcertMap={};parts.forEach(function(p){grpAcertMap[p.id]=0;});
-  grupos.filter(function(g){return g.correto;}).forEach(function(g){grpAcertMap[g.participante_id]=(grpAcertMap[g.participante_id]||0)+1;});
-  var maxGrpAcert=Math.max.apply(null,Object.values(grpAcertMap));
-  var maisGrpAcert=parts.filter(function(p){return grpAcertMap[p.id]===maxGrpAcert&&maxGrpAcert>0;}).map(function(p){return p.nome;}).join(', ');
-  if(maxGrpAcert>0)html+=statRow('🔠','Melhor em grupos',maisGrpAcert+' — '+maxGrpAcert+'/48 acertos de seleção e posição');
-
   difMap.sort(function(a,b){return b.pct-a.pct;});
   if(difMap.length){
     var maxFacPct=difMap[0].pct;
