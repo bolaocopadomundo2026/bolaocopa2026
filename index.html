@@ -347,6 +347,14 @@ async function start(){
   iniciarContador();
 }
 
+// Atualiza quando o usuario volta para a aba do navegador
+document.addEventListener('visibilitychange', function(){
+  if(document.visibilityState==='visible' && user){
+    var activeBtn = document.querySelector('.nb.on');
+    if(activeBtn) activeBtn.click();
+  }
+});
+
 function iniciarContador(){
   if(window._countdownInterval)clearInterval(window._countdownInterval);
   function atualizar(){
