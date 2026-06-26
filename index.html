@@ -451,8 +451,31 @@ async function renderRanking(){
     var semAp=totalFin-apFeitas;
     var semApHtml=semAp>0?'<span style="color:var(--danger);font-size:10px"> · '+semAp+' jogo'+(semAp!==1?'s':'')+' sem aposta</span>':'';
     var ultHtml=p.id===ultimoElegivel?'<span style="font-size:10px;padding:1px 5px;border-radius:8px;background:rgba(255,215,0,0.15);color:var(--gold);margin-left:4px">🎁 lanterna elegível</span>':'';
-    return '<div class="ri" style="'+(isMe?'background:rgba(0,200,120,0.07);border-radius:8px;padding:4px 6px;margin:0 -6px;':'')+'"><div class="rp '+pc(i)+'">'+(medal(i))+'</div><div class="rav" style="'+(isMe?'border-color:var(--green);border-width:2px;':'')+'">'+initials(p.nome)+'</div><div style="flex:1"><div class="rname">'+p.nome+(isMe?' 👤':'')+'</div><div class="rsub">'+cr+' cravada'+(cr!==1?'s':'')+' &middot; '+bo+' bonus'+semApHtml+ultHtml+'</div></div><div class="rbar"><div class="rbarv" style="width:'+pct+'%"></div></div><div class="rpts">'+pts+' pts</div></div>';
+    return '<div><div class="ri" style="cursor:pointer;'+(isMe?'background:rgba(0,200,120,0.07);border-radius:8px;padding:4px 6px;margin:0 -6px;':'')+'" data-pid="'+p.id+'" onclick="toggleRankDetail(this.dataset.pid)"><div class="rp '+pc(i)+'">'+(medal(i))+'</div><div class="rav" style="'+(isMe?'border-color:var(--green);border-width:2px;':'')+'">'+initials(p.nome)+'</div><div style="flex:1"><div class="rname">'+p.nome+(isMe?' 👤':'')+'</div><div class="rsub">'+cr+' cravada'+(cr!==1?'s':'')+' &middot; '+bo+' bonus'+semApHtml+ultHtml+'</div></div><div class="rbar"><div class="rbarv" style="width:'+pct+'%"></div></div><div class="rpts">'+pts+' pts</div></div><div id="rdet'+p.id+'" style="display:none;padding:8px 12px 10px 56px;font-size:12px;color:var(--muted);border-bottom:1px solid var(--border)"></div></div>';
   }).join('');
+}
+
+function toggleRankDetail(pid){
+  var el=D('rdet'+pid);
+  if(!el)return;
+  if(el.style.display==='none'){
+    var p=parts.find(function(x){return x.id===pid;});
+    if(!p){return;}
+    var ptsPlacar=0,ptsBonus=0;
+    apostas.filter(function(a){return a.participante_id===pid;}).forEach(function(a){
+      var j=jogos.find(function(x){return x.id===a.jogo_id;});
+      if(!j||j.gols_a===null||j.gols_a===undefined)return;
+      ptsPlacar+=calcPts(a.gols_a,a.gols_b,j.gols_a,j.gols_b,j.dobro);
+      if(a.bonus_correto)ptsBonus+=20;
+    });
+    var ptsEspP=0;
+    especiais.filter(function(e){return e.participante_id===pid&&e.correto;}).forEach(function(e){var d=ESPS.find(function(x){return x.key===e.categoria;});if(d)ptsEspP+=d.pts;});
+    var ptsGrpP=grupos.filter(function(g){return g.participante_id===pid&&g.correto;}).length*50;
+    el.innerHTML='⚽ Jogos: <strong style="color:var(--green)">'+ptsPlacar+' pts</strong> &nbsp;|&nbsp; ❓ Bônus: <strong style="color:var(--green)">'+ptsBonus+' pts</strong> &nbsp;|&nbsp; ⭐ Especiais: <strong style="color:var(--green)">'+ptsEspP+' pts</strong> &nbsp;|&nbsp; 🔠 Grupos: <strong style="color:var(--green)">'+ptsGrpP+' pts</strong>';
+    el.style.display='';
+  } else {
+    el.style.display='none';
+  }
 }
 
 async function renderJogos(){
