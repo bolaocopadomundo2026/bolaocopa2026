@@ -632,9 +632,14 @@ async function renderGrupos(){
     [1,2,3,4].forEach(pos=>{
       var g=myGrp[String(gr)+'-'+String(pos)]||{},val=g.selecao||'';
       var ofGrp=oficialGrp[gr+'-'+pos];
+      var temOf=!!ofGrp;
+      var statusBadge;
+      if(g.correto) statusBadge='<span id="gb'+gr+''+pos+'" style="flex-shrink:0;font-size:11px;padding:2px 6px;border-radius:10px;background:var(--gdim);color:var(--green)">✓ OK</span>';
+      else if(temOf&&val) statusBadge='<span id="gb'+gr+''+pos+'" style="flex-shrink:0;font-size:11px;padding:2px 6px;border-radius:10px;background:rgba(255,90,90,0.12);color:var(--danger)">✗</span>';
+      else statusBadge='<span id="gb'+gr+''+pos+'" style="flex-shrink:0;font-size:11px;padding:2px 6px;border-radius:10px;'+(val?'background:var(--bg3);color:var(--muted)':'')+'">'+( val?'pend.':'')+'</span>';
       html+='<div class="gpr"><span class="gpl">'+pos+'o lugar</span>'+
         '<input type="text" placeholder="Selecao" value="'+val+'" id="gi'+gr+''+pos+'"'+(fechado?' disabled':'')+' style="flex:1;min-width:0">'+
-        '<span id="gb'+gr+''+pos+'" style="flex-shrink:0;font-size:11px;padding:2px 6px;border-radius:10px;'+(g.correto?'background:var(--gdim);color:var(--green)':val?'background:var(--bg3);color:var(--muted)':'')+'">'+( g.correto?'OK':val?'pend.':'')+'</span>'+
+        statusBadge+
         (!fechado?'<button class="btn sm" style="flex-shrink:0;padding:3px 8px;font-size:11px" data-gr="'+gr+'" data-pos="'+pos+'" onclick="saveGrp(this.dataset.gr,this.dataset.pos)">OK</button>':'')+
         '</div>'+
         (ofGrp?'<div style="font-size:10px;color:var(--green);padding-left:48px;margin-top:-4px;margin-bottom:4px">✅ Oficial: '+ofGrp+'</div>':'');
@@ -702,6 +707,7 @@ async function renderPont(viewPid){
   var pid=viewPid||user.id;
   var isMe=pid===user.id;
   var total=getPts(pid),cr=cravadas(pid);
+  var bonusAcertados=apostas.filter(a=>a.participante_id===pid&&a.bonus_correto).length;
   var viewPart=parts.find(p=>p.id===pid)||{nome:'?'};
   var html='';
   // Seletor de participante
@@ -716,7 +722,7 @@ async function renderPont(viewPid){
   if(!isMe)html+='<button class="btn sm" onclick="renderPont()">👤 Voltar para meus pontos</button>';
   html+='</div>';
   if(!isMe)html+='<div class="ib" style="margin-bottom:1rem">Visualizando pontos de <strong>'+viewPart.nome+'</strong></div>';
-  html+='<div class="card" style="text-align:center;margin-bottom:1rem"><div style="font-family:\'Barlow Condensed\',sans-serif;font-size:48px;font-weight:900;color:var(--green)">'+total+'</div><div style="font-size:14px;color:var(--muted)">pontos totais</div><div style="font-size:13px;color:var(--amber);margin-top:4px">'+cr+' placar'+(cr!==1?'es':'')+' cravado'+(cr!==1?'s':'')+'</div></div>';
+  html+='<div class="card" style="text-align:center;margin-bottom:1rem"><div style="font-family:\'Barlow Condensed\',sans-serif;font-size:48px;font-weight:900;color:var(--green)">'+total+'</div><div style="font-size:14px;color:var(--muted)">pontos totais</div><div style="font-size:13px;color:var(--amber);margin-top:4px">'+cr+' placar'+(cr!==1?'es':'')+' cravado'+(cr!==1?'s':'')+' · '+bonusAcertados+' bonus acertad'+(bonusAcertados!==1?'os':'o')+'</div></div>';
   var apRes=apostas.filter(a=>{if(a.participante_id!==pid)return false;var j=jogos.find(x=>x.id===a.jogo_id);return j&&j.gols_a!==null&&j.gols_a!==undefined;}).sort((a,b)=>a.jogo_id-b.jogo_id);
   if(apRes.length){
     var ptJ=0;apRes.forEach(a=>{var j=jogos.find(x=>x.id===a.jogo_id);ptJ+=calcPts(a.gols_a,a.gols_b,j.gols_a,j.gols_b,j.dobro);if(a.bonus_correto)ptJ+=20;});
