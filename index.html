@@ -286,6 +286,10 @@ function cravadas(pid){
   return c;
 }
 
+function bonusAcertos(pid){
+  return apostas.filter(a=>a.participante_id===pid&&a.bonus_correto).length;
+}
+
 function getPts(pid){
   var tot=0;
   apostas.filter(a=>a.participante_id===pid).forEach(a=>{
@@ -373,7 +377,7 @@ function logout(){
 
 async function renderRanking(){
   await load();
-  var sorted=parts.slice().sort((a,b)=>{var d=getPts(b.id)-getPts(a.id);return d!==0?d:cravadas(b.id)-cravadas(a.id);});
+  var sorted=parts.slice().sort((a,b)=>{var d=getPts(b.id)-getPts(a.id);if(d!==0)return d;var dc=cravadas(b.id)-cravadas(a.id);return dc!==0?dc:bonusAcertos(b.id)-bonusAcertos(a.id);});
   var maxPts=Math.max(1,...parts.map(p=>getPts(p.id)));
   var totalRes=jogos.filter(j=>j.gols_a!==null&&j.gols_a!==undefined).length;
   // Barra de progresso do bolão
@@ -441,7 +445,7 @@ async function renderRanking(){
     if(apF===totalFin){ultimoElegivel=sorted[ui].id;break;}
   }
   D('rlist').innerHTML=sorted.map(function(p,i){
-    var pts=getPts(p.id),cr=cravadas(p.id),pct=Math.round(pts/maxPts*100);
+    var pts=getPts(p.id),cr=cravadas(p.id),bo=bonusAcertos(p.id),pct=Math.round(pts/maxPts*100);
     var isMe=user&&p.id===user.id;
     var apFeitas=apostas.filter(function(a){return a.participante_id===p.id&&jogosFinIds.includes(a.jogo_id);}).length;
     var semAp=totalFin-apFeitas;
@@ -1005,7 +1009,7 @@ async function saveRegras(){
 async function exportar(){
   D('expstatus').textContent='Gerando...';await load();
   var wb=XLSX.utils.book_new();
-  var sorted=parts.slice().sort((a,b)=>{var d=getPts(b.id)-getPts(a.id);return d!==0?d:cravadas(b.id)-cravadas(a.id);});
+  var sorted=parts.slice().sort((a,b)=>{var d=getPts(b.id)-getPts(a.id);if(d!==0)return d;var dc=cravadas(b.id)-cravadas(a.id);return dc!==0?dc:bonusAcertos(b.id)-bonusAcertos(a.id);});
 
   // ABA RANKING
   var rankRows=[['Posição','Participante','Total Pts','Cravadas','Pts Placares','Pts Bônus','Pts Especiais','Pts Grupos']];
