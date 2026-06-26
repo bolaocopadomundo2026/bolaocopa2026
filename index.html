@@ -1398,7 +1398,14 @@ function pg(id,btn){
   D('pg-'+id).classList.add('on');if(btn)btn.classList.add('on');
   if(id==='ranking')renderRanking();
   if(id==='jogos')renderJogos();
-  if(id==='apostas')renderApostas();
+  if(id==='apostas'){
+    // Seleciona automaticamente a fase com proximo prazo mais urgente
+    var agora=new Date();
+    var proximosJ=jogos.filter(function(j){return j.ativo&&j.prazo&&new Date(j.prazo)>agora;});
+    proximosJ.sort(function(a,b){return new Date(a.prazo)-new Date(b.prazo);});
+    if(proximosJ.length) D('afase').value=proximosJ[0].fase;
+    renderApostas();
+  }
   if(id==='especiais')renderEspeciais();
   if(id==='grupos')renderGrupos();
   if(id==='pont')renderPont();
