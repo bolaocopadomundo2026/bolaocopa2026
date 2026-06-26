@@ -525,6 +525,7 @@ async function renderApostas(){
     html+='<div class="gc'+(feita?' mine':'')+'">'+
       '<div class="gh"><span class="gn">Jogo '+j.id+'</span>'+(j.dobro?'<span class="db">🔥 Dobro</span>':'')+
       '<span class="gp '+(fechado?'pno':'pok')+'">'+(fechado?'Encerrado: ':'Aberto ate: ')+toBSB(j.prazo)+'</span>'+(pts!==null?'<span class="pb">+'+pts+' pts</span>':'')+(ap.bonus_correto?'<span class="pb">+20 bonus</span>':'')+'</div>'+
+      (fase!=='grupos'?'<div style="font-size:11px;color:var(--amber);margin-bottom:.5rem">⏱ Responda o placar apenas dos 90 minutos de partida</div>':'')+
       '<div class="gt"><div class="tn tnr">'+j.time_a+'</div>'+
       '<input class="sb" type="number" min="0" max="30" placeholder="-" value="'+(ap.gols_a!==null&&ap.gols_a!==undefined?ap.gols_a:'')+'"'+((fechado||bloq)?' disabled':'')+' id="ga'+j.id+'">'+
       '<div class="sep">x</div>'+
