@@ -139,7 +139,7 @@ tr:last-child td{border-bottom:none}
       <div class="row" style="display:none"><div class="grow"><select id="jfase" onchange="renderJogos()"><option value="grupos">Fase de grupos</option><option value="mata">2a Fase</option><option value="oitavas">Oitavas</option><option value="quartas">Quartas</option><option value="semis">Semifinal</option><option value="final">Final</option></select></div></div>
       <div id="jarea"></div></div>
     <div id="pg-apostas" class="page"><div class="sh">Minhas Apostas</div>
-      <div class="row"><div class="grow"><select id="afase" onchange="renderApostas()"><option value="grupos">Fase de grupos</option><option value="mata">2a Fase</option><option value="oitavas">Oitavas</option><option value="quartas">Quartas</option><option value="semis">Semifinal</option><option value="final">Final</option></select></div></div>
+      <div class="row" style="display:none"><div class="grow"><select id="afase" onchange="renderApostas()"><option value="grupos">Fase de grupos</option><option value="mata">2a Fase</option><option value="oitavas">Oitavas</option><option value="quartas">Quartas</option><option value="semis">Semifinal</option><option value="final">Final</option></select></div></div>
       <div id="aarea"></div></div>
     <div id="pg-especiais" class="page"><div class="sh">Apostas Especiais</div><div id="esparea"></div></div>
     <div id="pg-grupos" class="page"><div class="sh">Apostas Grupos</div><div id="grparea"></div></div>
@@ -545,8 +545,8 @@ async function renderJogos(){
 
 async function renderApostas(){
   await load();
-  var fase=D('afase').value,jg=jogos.filter(j=>j.fase===fase&&j.ativo);
-  if(!jg.length){D('aarea').innerHTML='<div style="color:var(--muted)">Nenhum jogo lancado nessa fase.</div>';return;}
+  var jg=jogos.filter(j=>j.ativo);
+  if(!jg.length){D('aarea').innerHTML='<div style="color:var(--muted)">Nenhum jogo lancado ainda.</div>';return;}
   var myAp={};apostas.filter(a=>a.participante_id===user.id).forEach(a=>{myAp[a.jogo_id]=a;});
   var jgSemRes=jg.filter(j=>j.gols_a===null||j.gols_a===undefined);
   var jgComRes=jg.filter(j=>j.gols_a!==null&&j.gols_a!==undefined);
@@ -561,9 +561,9 @@ async function renderApostas(){
     if(resDisp&&!divOk){divOk=true;html+='<div class="div"><div class="divl"></div><span class="divt">Jogos finalizados</span><div class="divl"></div></div>';}
     var faseLabel=FASE_LABELS[j.fase]||j.fase;
     html+='<div class="gc'+(feita?' mine':'')+'">'+
-      '<div class="gh"><span class="gn">Jogo '+j.id+'</span>'+(j.dobro?'<span class="db">🔥 Dobro</span>':'')+
+      '<div class="gh"><span class="gn">Jogo '+j.id+'</span><span class="fb" style="font-size:10px;background:var(--bg3);color:var(--muted);padding:2px 6px;border-radius:8px">'+faseLabel+'</span>'+(j.dobro?'<span class="db">🔥 Dobro</span>':'')+
       '<span class="gp '+(fechado?'pno':'pok')+'">'+(fechado?'Encerrado: ':'Aberto ate: ')+toBSB(j.prazo)+'</span>'+(pts!==null?'<span class="pb">+'+pts+' pts</span>':'')+(ap.bonus_correto?'<span class="pb">+20 bonus</span>':'')+'</div>'+
-      (fase!=='grupos'?'<div style="font-size:11px;color:var(--amber);margin-bottom:.5rem">⏱ Responda o placar apenas dos 90 minutos de partida</div>':'')+
+      (j.fase!=='grupos'?'<div style="font-size:11px;color:var(--amber);margin-bottom:.5rem">⏱ Responda o placar apenas dos 90 minutos de partida</div>':'')+
       '<div class="gt"><div class="tn tnr">'+j.time_a+'</div>'+
       '<input class="sb" type="number" min="0" max="30" placeholder="-" value="'+(ap.gols_a!==null&&ap.gols_a!==undefined?ap.gols_a:'')+'"'+((fechado||bloq)?' disabled':'')+' id="ga'+j.id+'">'+
       '<div class="sep">x</div>'+
@@ -1443,14 +1443,7 @@ function pg(id,btn){
   D('pg-'+id).classList.add('on');if(btn)btn.classList.add('on');
   if(id==='ranking')renderRanking();
   if(id==='jogos')renderJogos();
-  if(id==='apostas'){
-    // Seleciona automaticamente a fase com proximo prazo mais urgente
-    var agora=new Date();
-    var proximosJ=jogos.filter(function(j){return j.ativo&&j.prazo&&new Date(j.prazo)>agora;});
-    proximosJ.sort(function(a,b){return new Date(a.prazo)-new Date(b.prazo);});
-    if(proximosJ.length) D('afase').value=proximosJ[0].fase;
-    renderApostas();
-  }
+  if(id==='apostas')renderApostas();
   if(id==='especiais')renderEspeciais();
   if(id==='grupos')renderGrupos();
   if(id==='pont')renderPont();
