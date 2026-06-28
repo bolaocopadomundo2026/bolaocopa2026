@@ -181,8 +181,8 @@ tr:last-child td{border-bottom:none}
         <div class="card"><div style="font-size:14px;font-weight:500;margin-bottom:.75rem">Adicionar Participante</div><div class="row"><div class="grow"><label class="fl">Nome</label><input type="text" id="pnome" placeholder="Joao Silva"></div><div class="grow"><label class="fl">Senha</label><input type="text" id="psw" placeholder="copa2026"></div><button class="btn pri" style="margin-top:19px" onclick="savePartic()">+ Adicionar</button></div></div>
         <div class="card"><div style="font-size:14px;font-weight:500;margin-bottom:.75rem">Participantes (<span id="pcnt">0</span>)</div><div class="tw"><table><thead><tr><th>Nome</th><th>Senha</th><th>Pts</th><th></th></tr></thead><tbody id="ptbody"></tbody></table></div></div>
       </div>
-      <div id="at-result" style="display:none"><div class="ib">Insira o resultado oficial. Pontos calculados automaticamente.</div><div class="row"><div class="grow"><select id="rfase" onchange="renderResult()"><option value="grupos">Fase de grupos</option><option value="mata">2a Fase</option><option value="oitavas">Oitavas</option><option value="quartas">Quartas</option><option value="semis">Semifinal</option><option value="final">Final</option></select></div></div><div id="rarea"></div></div>
-      <div id="at-bonus" style="display:none"><div class="wb">Os 20pts do bonus NAO dobram. Publique a resposta oficial para aparecer na aba Perguntas-Bonus.</div><div class="row"><div class="grow"><select id="bfase" onchange="renderAdmBonus()"><option value="grupos">Fase de grupos</option><option value="mata">2a Fase</option><option value="oitavas">Oitavas</option><option value="quartas">Quartas</option><option value="semis">Semifinal</option><option value="final">Final</option></select></div></div><div id="barea"></div></div>
+      <div id="at-result" style="display:none"><div class="ib">Insira o resultado oficial. Pontos calculados automaticamente.</div><div class="row" style="display:none"><div class="grow"><select id="rfase" onchange="renderResult()"><option value="grupos">Fase de grupos</option><option value="mata">2a Fase</option><option value="oitavas">Oitavas</option><option value="quartas">Quartas</option><option value="semis">Semifinal</option><option value="final">Final</option></select></div></div><div id="rarea"></div></div>
+      <div id="at-bonus" style="display:none"><div class="wb">Os 20pts do bonus NAO dobram. Publique a resposta oficial para aparecer na aba Perguntas-Bonus.</div><div class="row" style="display:none"><div class="grow"><select id="bfase" onchange="renderAdmBonus()"><option value="grupos">Fase de grupos</option><option value="mata">2a Fase</option><option value="oitavas">Oitavas</option><option value="quartas">Quartas</option><option value="semis">Semifinal</option><option value="final">Final</option></select></div></div><div id="barea"></div></div>
       <div id="at-especiais" style="display:none"><div class="wb">Valide os palpites especiais para atribuir pontos.</div><div id="espAdmArea"></div></div>
       <div id="at-grupos" style="display:none"><div class="wb">Valide os palpites de grupos (50pts por acerto).</div><div id="grpAdmArea"></div></div>
       <div id="at-config" style="display:none">
@@ -910,14 +910,15 @@ async function delPartic(id,nome){
 }
 
 async function renderResult(){
-  await load();var fase=D('rfase').value,jg=jogos.filter(j=>j.fase===fase);
-  if(!jg.length){D('rarea').innerHTML='<div style="color:var(--muted)">Nenhum jogo nessa fase.</div>';return;}
+  await load();var jg=jogos.slice();
+  if(!jg.length){D('rarea').innerHTML='<div style="color:var(--muted)">Nenhum jogo cadastrado.</div>';return;}
   var jgS=jg.filter(j=>j.gols_a===null||j.gols_a===undefined),jgC=jg.filter(j=>j.gols_a!==null&&j.gols_a!==undefined);
   var html='',divOk=false;
   jgS.concat(jgC).forEach(j=>{
     var ok=j.gols_a!==null&&j.gols_a!==undefined;
+    var faseLabel=FASE_LABELS[j.fase]||j.fase;
     if(ok&&!divOk){divOk=true;html+='<div class="div"><div class="divl"></div><span class="divt">Resultados ja lancados</span><div class="divl"></div></div>';}
-    html+='<div class="gc"><div class="gh"><span class="gn">Jogo '+j.id+'</span>'+(j.dobro?'<span class="db">🔥 Dobro</span>':'')+' <span class="'+(ok?'pb':'gn')+'">'+(ok?j.gols_a+'x'+j.gols_b:'sem resultado')+'</span></div><div class="gt"><div class="tn tnr">'+j.time_a+'</div><input class="sb" type="number" min="0" max="30" placeholder="-" value="'+(ok?j.gols_a:'')+'" id="rga'+j.id+'"><div class="sep">x</div><input class="sb" type="number" min="0" max="30" placeholder="-" value="'+(j.gols_b!==null&&j.gols_b!==undefined?j.gols_b:'')+'" id="rgb'+j.id+'"><div class="tn">'+j.time_b+'</div></div><button class="btn pri sm" data-id="'+j.id+'" onclick="saveResult(this.dataset.id)">⚡ Salvar</button></div>';
+    html+='<div class="gc"><div class="gh"><span class="gn">Jogo '+j.id+'</span><span class="fb" style="font-size:10px;background:var(--bg3);color:var(--muted);padding:2px 6px;border-radius:8px">'+faseLabel+'</span>'+(j.dobro?'<span class="db">🔥 Dobro</span>':'')+' <span class="'+(ok?'pb':'gn')+'">'+(ok?j.gols_a+'x'+j.gols_b:'sem resultado')+'</span></div><div class="gt"><div class="tn tnr">'+j.time_a+'</div><input class="sb" type="number" min="0" max="30" placeholder="-" value="'+(ok?j.gols_a:'')+'" id="rga'+j.id+'"><div class="sep">x</div><input class="sb" type="number" min="0" max="30" placeholder="-" value="'+(j.gols_b!==null&&j.gols_b!==undefined?j.gols_b:'')+'" id="rgb'+j.id+'"><div class="tn">'+j.time_b+'</div></div><button class="btn pri sm" data-id="'+j.id+'" onclick="saveResult(this.dataset.id)">⚡ Salvar</button></div>';
   });
   D('rarea').innerHTML=html;
 }
@@ -930,16 +931,17 @@ async function saveResult(jid){
 }
 
 async function renderAdmBonus(){
-  await load();var fase=D('bfase').value,jgAll=jogos.filter(j=>j.fase===fase&&j.pergunta_bonus);
-  if(!jgAll.length){D('barea').innerHTML='<div style="color:var(--muted)">Nenhum jogo com bonus nessa fase.</div>';return;}
+  await load();var jgAll=jogos.filter(j=>j.pergunta_bonus);
+  if(!jgAll.length){D('barea').innerHTML='<div style="color:var(--muted)">Nenhum jogo com bonus cadastrado.</div>';return;}
   // Sem resultado publicado primeiro, com resultado por último
   var jgSem=jgAll.filter(j=>!j.resposta_bonus_publica);
   var jgCom=jgAll.filter(j=>j.resposta_bonus_publica);
   var jg=jgSem.concat(jgCom);
   var html='';
   jg.forEach(j=>{
+    var faseLabel=FASE_LABELS[j.fase]||j.fase;
     var apJ=apostas.filter(a=>a.jogo_id===j.id&&a.resposta_bonus).sort((a,b)=>{var pa=parts.find(p=>p.id===a.participante_id),pb=parts.find(p=>p.id===b.participante_id);return (pa?pa.nome:'').localeCompare(pb?pb.nome:'');});
-    html+='<div class="gc"><div class="gh"><span class="gn">Jogo '+j.id+' — '+j.time_a+' x '+j.time_b+'</span></div><div style="font-size:13px;color:var(--amber);margin-bottom:.5rem">'+j.pergunta_bonus+'</div><div class="row" style="margin-bottom:.75rem"><div class="grow"><label class="fl">Resposta oficial (publica)</label><input type="text" placeholder="Resposta correta" value="'+(j.resposta_bonus_publica||'')+'" id="rpub'+j.id+'"></div><button class="btn pri sm" style="margin-top:19px" data-id="'+j.id+'" onclick="pubBonus(this.dataset.id)">📢 Publicar</button></div>'+apJ.map(a=>{var pt=parts.find(p=>p.id===a.participante_id);return '<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-top:1px solid var(--border)"><div style="flex:1;font-size:13px">'+(pt?pt.nome:'?')+'</div><div style="font-size:13px;flex:1;color:var(--muted)">'+a.resposta_bonus+'</div><button class="btn sm'+(a.bonus_correto?' pri':'')+'" data-id="'+a.id+'" data-cor="'+(!a.bonus_correto)+'" data-jid="'+j.id+'" onclick="togBonus(this.dataset.id,this.dataset.cor,this.dataset.jid)">'+(a.bonus_correto?'✓ OK':'Marcar OK')+'</button></div>';}).join('')+(apJ.length?'':'<div style="color:var(--muted);font-size:12px">Sem respostas ainda.</div>')+'</div>';
+    html+='<div class="gc"><div class="gh"><span class="gn">Jogo '+j.id+' — '+j.time_a+' x '+j.time_b+'</span><span class="fb" style="font-size:10px;background:var(--bg3);color:var(--muted);padding:2px 6px;border-radius:8px;margin-left:6px">'+faseLabel+'</span></div><div style="font-size:13px;color:var(--amber);margin-bottom:.5rem">'+j.pergunta_bonus+'</div><div class="row" style="margin-bottom:.75rem"><div class="grow"><label class="fl">Resposta oficial (publica)</label><input type="text" placeholder="Resposta correta" value="'+(j.resposta_bonus_publica||'')+'" id="rpub'+j.id+'"></div><button class="btn pri sm" style="margin-top:19px" data-id="'+j.id+'" onclick="pubBonus(this.dataset.id)">📢 Publicar</button></div>'+apJ.map(a=>{var pt=parts.find(p=>p.id===a.participante_id);return '<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-top:1px solid var(--border)"><div style="flex:1;font-size:13px">'+(pt?pt.nome:'?')+'</div><div style="font-size:13px;flex:1;color:var(--muted)">'+a.resposta_bonus+'</div><button class="btn sm'+(a.bonus_correto?' pri':'')+'" data-id="'+a.id+'" data-cor="'+(!a.bonus_correto)+'" data-jid="'+j.id+'" onclick="togBonus(this.dataset.id,this.dataset.cor,this.dataset.jid)">'+(a.bonus_correto?'✓ OK':'Marcar OK')+'</button></div>';}).join('')+(apJ.length?'':'<div style="color:var(--muted);font-size:12px">Sem respostas ainda.</div>')+'</div>';
   });
   D('barea').innerHTML=html;
 }
