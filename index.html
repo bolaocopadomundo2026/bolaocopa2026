@@ -1291,13 +1291,6 @@ async function renderCuriosidades(){
   var maisUnico=parts.filter(function(p){return unicoMap[p.id]===maxUnico&&maxUnico>0;}).map(function(p){return p.nome;}).join(', ');
   if(maxUnico>0)html+=statRow('🎰','Apostador mais único',maisUnico+' — '+maxUnico+' aposta'+(maxUnico!==1?'s':'')+' que só ele(a) fez');
 
-  // Quem mais acertou seleções nos grupos
-  var grpAcertMap={};parts.forEach(function(p){grpAcertMap[p.id]=0;});
-  grupos.forEach(function(g){if(g.correto)grpAcertMap[g.participante_id]=(grpAcertMap[g.participante_id]||0)+1;});
-  var maxGrpAcert=Math.max.apply(null,Object.values(grpAcertMap));
-  var maisGrpAcert=parts.filter(function(p){return grpAcertMap[p.id]===maxGrpAcert&&maxGrpAcert>0;}).map(function(p){return p.nome;}).join(', ');
-  if(maxGrpAcert>0)html+=statRow('🔠','Melhor em grupos',maisGrpAcert+' — '+maxGrpAcert+'/48 acertos de seleção e posição');
-
   // Sequencia
   var seqMap={};
   parts.forEach(function(p){
@@ -1338,15 +1331,48 @@ async function renderCuriosidades(){
   // === SOBRE OS GRUPOS ===
   if(grupos.length){
     html+='<div class="card"><div style="font-size:13px;color:var(--muted);margin-bottom:1rem;text-transform:uppercase;letter-spacing:.5px;font-weight:600">🔠 Sobre os Grupos</div>';
+
+    // Top 3 melhor em grupos
+    var grpAcertMap={};parts.forEach(function(p){grpAcertMap[p.id]=0;});
+    grupos.forEach(function(g){if(g.correto)grpAcertMap[g.participante_id]=(grpAcertMap[g.participante_id]||0)+1;});
+    var top3Grp=parts.map(function(p){return {nome:p.nome,acertos:grpAcertMap[p.id]};}).filter(function(x){return x.acertos>0;}).sort(function(a,b){return b.acertos-a.acertos;}).slice(0,3);
+    if(top3Grp.length){
+      html+=statRow('🏅','Top 3 em grupos',top3Grp.map(function(x,i){return (i+1)+'º '+x.nome+' ('+x.acertos+'/48)';}).join(' · '));
+    } else {
+      html+='<div style="color:var(--muted);font-size:12px;padding-bottom:6px">Nenhum acerto de grupo validado ainda.</div>';
+    }
+
+    // Grupo mais acertado
     var grpLetraMap={};
     grupos.forEach(function(g){if(g.correto)grpLetraMap[g.grupo]=(grpLetraMap[g.grupo]||0)+1;});
     if(Object.keys(grpLetraMap).length){
       var maxGrpLetra=Math.max.apply(null,Object.values(grpLetraMap));
       var gruposTop=Object.entries(grpLetraMap).filter(function(e){return e[1]===maxGrpLetra;}).map(function(e){return 'Grupo '+e[0];}).join(', ');
       html+=statRow('🌍','Grupo mais acertado',gruposTop+' — '+maxGrpLetra+' acerto'+(maxGrpLetra!==1?'s':'')+' de seleção');
-    } else {
-      html+='<div style="color:var(--muted);font-size:12px">Nenhum acerto de grupo validado ainda.</div>';
     }
+
+    // Selecao mais acertada
+    var selMap={};
+    grupos.forEach(function(g){if(g.correto&&g.selecao)selMap[g.selecao]=(selMap[g.selecao]||0)+1;});
+    if(Object.keys(selMap).length){
+      var maxSel=Math.max.apply(null,Object.values(selMap));
+      var selTop=Object.entries(selMap).filter(function(e){return e[1]===maxSel;}).map(function(e){return e[0];}).join(', ');
+      html+=statRow('🇧🇷','Seleção mais acertada',selTop+' — acertada por '+maxSel+' participante'+(maxSel!==1?'s':''));
+    }
+
+    // Grupo com menos acertos (entre os que ja tem ao menos 1 acerto registrado em qualquer grupo do bolao)
+    if(Object.keys(grpLetraMap).length){
+      var allLetras={};GRUPOS.forEach(function(g){allLetras[g]=grpLetraMap[g]||0;});
+      var minGrpLetra=Math.min.apply(null,Object.values(allLetras));
+      var gruposMin=Object.entries(allLetras).filter(function(e){return e[1]===minGrpLetra;}).map(function(e){return 'Grupo '+e[0];}).join(', ');
+      html+=statRow('🥀','Grupo com menos acertos',gruposMin+' — apenas '+minGrpLetra+' acerto'+(minGrpLetra!==1?'s':'')+' de seleção');
+    }
+
+    // Quem nunca acertou nenhum grupo (entre quem ja apostou)
+    var apostaramGrp=Object.keys(grpAcertMap).filter(function(pid){
+      return grupos.some(function(g){return g.participante_id===pid;});
+    });
+
     html+='</div>';
   }
 
