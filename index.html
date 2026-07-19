@@ -394,10 +394,9 @@ async function renderRanking(){
   var pctJogos=Math.round(jogosFin/jogosTotal104*100);
 
   var ptsEspMax=1700;
-  var ptsEspAtual=0;
-  especiais.filter(function(e){return e.correto;}).forEach(function(e){
-    var d=ESPS.find(function(x){return x.key===e.categoria;});if(d)ptsEspAtual+=d.pts;
-  });
+  // Conta apenas categorias com resposta oficial publicada (oficialEsp)
+  var categoriasOficiais=ESPS.filter(function(def){return oficialEsp[def.key];});
+  var ptsEspAtual=categoriasOficiais.reduce(function(s,def){return s+def.pts;},0);
   var pctEsp=Math.round(ptsEspAtual/ptsEspMax*100);
 
   var ptsGrpMax=2400;
